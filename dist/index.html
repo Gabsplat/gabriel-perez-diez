@@ -19,6 +19,11 @@
     .brand{font-size:17px;font-weight:700;letter-spacing:-.045em;text-decoration:none}
     nav{display:flex;gap:30px;font-size:14px}
     nav a{text-decoration:none}
+    .header-actions{display:flex;align-items:center;gap:32px}
+    .language-picker{display:flex;gap:3px;border:1px solid #344036;border-radius:7px;padding:3px}
+    .language-picker button{border:0;border-radius:4px;background:transparent;color:#a8b5a4;min-width:35px;min-height:30px;padding:4px 6px;font:600 12px Arial,Helvetica,sans-serif;cursor:pointer}
+    .language-picker button[aria-pressed="true"]{background:#d5f57c;color:#101511}
+    .language-picker button:focus-visible{outline:2px solid #d5f57c;outline-offset:3px}
     .hero{display:grid;grid-template-columns:minmax(0,1fr) 270px;align-items:center;gap:80px;min-height:510px;padding:80px 0 75px}
     .eyebrow{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#a8b5a4;font-weight:700;margin:0 0 24px}
     h1{font-size:clamp(48px,6.4vw,88px);letter-spacing:-.075em;line-height:1.02;font-weight:600;max-width:790px;margin:0}
@@ -53,7 +58,7 @@
     footer{display:flex;justify-content:space-between;gap:30px;border-top:1px solid #344036;padding:30px 0 46px;font-size:14px;color:#a8b5a4}
     footer div{display:flex;gap:22px}
     @media(max-width:850px){.page{padding:0 26px}.hero{grid-template-columns:1fr 160px;gap:30px}.graphic{width:160px;height:160px}.graphic b{font-size:28px}.graphic:before{inset:20px}.graphic:after{width:60px;height:60px;left:calc(50% - 30px);top:calc(50% - 30px)}.project{grid-template-columns:80px 1fr;gap:18px}.tags{grid-column:2;text-align:left;padding-top:0}.section-head,.about-grid,.experience{grid-template-columns:80px 1fr;gap:18px}}
-    @media(max-width:600px){.page{padding:0 22px}header{padding:23px 0}nav{gap:18px}.hero{display:flex;flex-direction:column-reverse;align-items:flex-start;gap:30px;padding:55px 0 67px;min-height:0}.graphic{width:126px;height:126px;align-self:flex-end}.graphic b{font-size:23px}.graphic:before{inset:17px}.graphic:after{width:50px;height:50px;left:calc(50% - 25px);top:calc(50% - 25px)}h1{font-size:clamp(47px,12vw,68px)}.intro{font-size:17px;margin-top:24px}.eyebrow{margin-bottom:18px}section{padding:48px 0 57px}.section-head,.about-grid,.experience{display:block}.section-head h2,.about-grid h2{margin-bottom:19px}.section-head p{font-size:16px}.project{grid-template-columns:38px 1fr;gap:12px;padding:23px 0}h3{font-size:22px}.project p{font-size:15px}.tags{font-size:12px}.experience{padding:21px 0}.date{display:block;margin-bottom:9px}footer{display:block}footer div{margin-top:18px}}
+    @media(max-width:600px){.page{padding:0 22px}header{display:grid;grid-template-columns:1fr auto;padding:23px 0;gap:18px}.brand{grid-column:1;grid-row:1}.header-actions{display:contents}.language-picker{grid-column:2;grid-row:1}nav{grid-column:1/-1;grid-row:2;gap:22px;font-size:14px}.hero{display:flex;flex-direction:column-reverse;align-items:flex-start;gap:30px;padding:55px 0 67px;min-height:0}.graphic{width:126px;height:126px;align-self:flex-end}.graphic b{font-size:23px}.graphic:before{inset:17px}.graphic:after{width:50px;height:50px;left:calc(50% - 25px);top:calc(50% - 25px)}h1{font-size:clamp(47px,12vw,68px)}.intro{font-size:17px;margin-top:24px}.eyebrow{margin-bottom:18px}section{padding:48px 0 57px}.section-head,.about-grid,.experience{display:block}.section-head h2,.about-grid h2{margin-bottom:19px}.section-head p{font-size:16px}.project{grid-template-columns:38px 1fr;gap:12px;padding:23px 0}h3{font-size:22px}.project p{font-size:15px}.tags{font-size:12px}.experience{padding:21px 0}.date{display:block;margin-bottom:9px}footer{display:block}footer div{margin-top:18px}}
     @media(prefers-reduced-motion:reduce){.orbit{animation:none}*{scroll-behavior:auto!important;transition:none!important}}
   </style>
 </head>
@@ -61,36 +66,99 @@
   <div class="page">
     <header>
       <a class="brand" href="#inicio" aria-label="Gabriel Pérez Diez, inicio">Gabriel Pérez Diez</a>
-      <nav aria-label="Navegación principal"><a href="#proyectos">Proyectos</a><a href="#sobre-mi">Sobre mí</a><a href="mailto:gprezdiez@gmail.com">Contacto</a></nav>
+      <div class="header-actions"><nav aria-label="Navegación principal"><a href="#proyectos" data-i18n="navProjects">Proyectos</a><a href="#sobre-mi" data-i18n="navAbout">Sobre mí</a><a href="mailto:gprezdiez@gmail.com" data-i18n="navContact">Contacto</a></nav><div class="language-picker" role="group" aria-label="Idioma"><button type="button" data-language="es" aria-pressed="true" aria-label="Español">ES</button><button type="button" data-language="en" aria-pressed="false" aria-label="English">EN</button></div></div>
     </header>
     <main id="inicio">
       <div class="hero">
         <div>
-          <p class="eyebrow">Desarrollador frontend · Mendoza, Argentina</p>
-          <h1>Construyo productos web <span>que se usan.</span></h1>
-          <p class="intro">Soy Gabriel. Trabajo con React y TypeScript para convertir necesidades concretas en interfaces claras, herramientas internas y experiencias interactivas.</p>
-          <div class="hero-links"><a href="#proyectos">Ver proyectos</a><a href="mailto:gprezdiez@gmail.com">Hablemos</a></div>
+          <p class="eyebrow" data-i18n="eyebrow">Desarrollador frontend · Mendoza, Argentina</p>
+          <h1><span data-i18n="heroFirst" style="color:inherit">Construyo productos web </span><span data-i18n="heroSecond">que se usan.</span></h1>
+          <p class="intro" data-i18n="intro">Soy Gabriel. Trabajo con React y TypeScript para convertir necesidades concretas en interfaces claras, herramientas internas y experiencias interactivas.</p>
+          <div class="hero-links"><a href="#proyectos" data-i18n="viewProjects">Ver proyectos</a><a href="mailto:gprezdiez@gmail.com" data-i18n="letsTalk">Hablemos</a></div>
         </div>
         <div class="graphic" aria-hidden="true"><div class="orbit"></div><b>G.</b></div>
       </div>
       <section id="proyectos" aria-labelledby="proyectos-title">
-        <div class="section-head"><h2 id="proyectos-title">Proyectos</h2><p>Una selección de productos, herramientas y experiencias que construí para resolver problemas reales.</p></div>
-        <article class="project"><span class="number">01 /</span><div><h3>Bildenlex</h3><p>Creé la primera versión del sistema como único desarrollador en Corpora: participé en la definición del producto, diseñé su arquitectura y lo implementé de punta a punta. Más tarde, en Aftercode, diseñé y desarrollé una nueva arquitectura frontend para los flujos operativos que usan a diario entre 5 y 10 personas.</p></div><span class="tags">Producto · Frontend · Operaciones</span></article>
-        <article class="project"><span class="number">02 /</span><div><h3>Legali / LexFlow</h3><p>Trabajé en el frontend y las integraciones de una plataforma de automatización documental. Construí formularios validados con Zod y flujos que conectan datos de Google Sheets, Google Drive y Airtable con la generación de documentos DOCX.</p></div><span class="tags">Automatización · Formularios · Integraciones</span></article>
-        <article class="project"><span class="number">03 /</span><div><h3>Mi Casa Decoraciones</h3><p>Desarrollé un centro de cotizaciones para Mi Casa Decoraciones. La herramienta se integra con Tango y permite crear y guardar presupuestos para el trabajo cotidiano del negocio.</p></div><span class="tags">Herramientas internas · Integraciones</span></article>
-        <article class="project"><span class="number">04 /</span><div><h3>Nerdconf</h3><p>Construí sitios con React y WordPress, juegos y experiencias web con tecnología 3D para eventos presenciales de más de 400 asistentes. Uno de esos proyectos fue un bingo humano: transformé la dinámica del evento en una experiencia web que usaron los participantes.</p></div><span class="tags">Web interactiva · Eventos · 3D</span></article>
+        <div class="section-head"><h2 id="proyectos-title" data-i18n="projectsTitle">Proyectos</h2><p data-i18n="projectsIntro">Una selección de productos, herramientas y experiencias que construí para resolver problemas reales.</p></div>
+        <article class="project"><span class="number">01 /</span><div><h3>Bildenlex</h3><p data-i18n="bildenlex">Creé la primera versión del sistema como único desarrollador en Corpora: participé en la definición del producto, diseñé su arquitectura y lo implementé de punta a punta. Más tarde, en Aftercode, diseñé y desarrollé una nueva arquitectura frontend para los flujos operativos que usan a diario entre 5 y 10 personas.</p></div><span class="tags" data-i18n="bildenlexTags">Producto · Frontend · Operaciones</span></article>
+        <article class="project"><span class="number">02 /</span><div><h3>Legali / LexFlow</h3><p data-i18n="legali">Trabajé en el frontend y las integraciones de una plataforma de automatización documental. Construí formularios validados con Zod y flujos que conectan datos de Google Sheets, Google Drive y Airtable con la generación de documentos DOCX.</p></div><span class="tags" data-i18n="legaliTags">Automatización · Formularios · Integraciones</span></article>
+        <article class="project"><span class="number">03 /</span><div><h3>Mi Casa Decoraciones</h3><p data-i18n="micasa">Desarrollé un centro de cotizaciones para Mi Casa Decoraciones. La herramienta se integra con Tango y permite crear y guardar presupuestos para el trabajo cotidiano del negocio.</p></div><span class="tags" data-i18n="micasaTags">Herramientas internas · Integraciones</span></article>
+        <article class="project"><span class="number">04 /</span><div><h3>Nerdconf</h3><p data-i18n="nerdconf">Construí sitios con React y WordPress, juegos y experiencias web con tecnología 3D para eventos presenciales de más de 400 asistentes. Uno de esos proyectos fue un bingo humano: transformé la dinámica del evento en una experiencia web que usaron los participantes.</p></div><span class="tags" data-i18n="nerdconfTags">Web interactiva · Eventos · 3D</span></article>
       </section>
       <section id="sobre-mi" aria-labelledby="sobre-title">
-        <div class="about-grid"><h2 id="sobre-title">Sobre mí</h2><div><p>Cofundé Aftercode Software y trabajé allí hasta septiembre de 2026. Participé en el relevamiento de necesidades, la arquitectura frontend y la entrega de productos para clientes, con atención tanto a la interfaz como a las integraciones que la hacen funcionar.</p><p>Trabajo principalmente con React, TypeScript, Next.js y Vite. También uso herramientas de backend, automatización y pruebas cuando el producto lo necesita. Soy licenciado en Informática y Desarrollo de Software por la Universidad del Aconcagua.</p></div></div>
+        <div class="about-grid"><h2 id="sobre-title" data-i18n="aboutTitle">Sobre mí</h2><div><p data-i18n="aboutFirst">Cofundé Aftercode Software y trabajé allí hasta septiembre de 2026. Participé en el relevamiento de necesidades, la arquitectura frontend y la entrega de productos para clientes, con atención tanto a la interfaz como a las integraciones que la hacen funcionar.</p><p data-i18n="aboutSecond">Trabajo principalmente con React, TypeScript, Next.js y Vite. También uso herramientas de backend, automatización y pruebas cuando el producto lo necesita. Soy licenciado en Informática y Desarrollo de Software por la Universidad del Aconcagua.</p></div></div>
       </section>
       <section aria-labelledby="trayectoria-title">
-        <div class="section-head"><h2 id="trayectoria-title">Trayectoria</h2><p>Experiencia construyendo software para clientes, equipos internos y eventos.</p></div>
-        <div class="experience"><span class="date">2024 — 2026</span><div><h3>Aftercode Software</h3><p>Desarrollador frontend y cofundador. Productos web, herramientas internas y automatización.</p></div></div>
-        <div class="experience"><span class="date">2021 — 2026</span><div><h3>Nerdconf</h3><p>Desarrollador frontend por contrato. Sitios, juegos y experiencias digitales para eventos.</p></div></div>
-        <div class="experience"><span class="date">2022 — 2023</span><div><h3>Corpora</h3><p>Desarrollador de software. Productos a medida, automatización documental y sistemas internos.</p></div></div>
+        <div class="section-head"><h2 id="trayectoria-title" data-i18n="experienceTitle">Trayectoria</h2><p data-i18n="experienceIntro">Experiencia construyendo software para clientes, equipos internos y eventos.</p></div>
+        <div class="experience"><span class="date" data-i18n="aftercodeDate">Mar 2024 — Sep 2026</span><div><h3>Aftercode Software</h3><p data-i18n="aftercodeRole">Desarrollador frontend y cofundador. Productos web, herramientas internas y automatización.</p></div></div>
+        <div class="experience"><span class="date" data-i18n="nerdconfDate">Oct 2021 — Ene 2026</span><div><h3>Nerdconf</h3><p data-i18n="nerdconfRole">Desarrollador frontend por contrato. Sitios, juegos y experiencias digitales para eventos.</p></div></div>
+        <div class="experience"><span class="date" data-i18n="corporaDate">Ene 2022 — Jul 2023</span><div><h3>Corpora</h3><p data-i18n="corporaRole">Desarrollador de software. Productos a medida, automatización documental y sistemas internos.</p></div></div>
       </section>
     </main>
     <footer><span>Gabriel Pérez Diez · Mendoza, Argentina</span><div><a href="mailto:gprezdiez@gmail.com">Email</a><a href="https://github.com/gabsplat" target="_blank" rel="noopener noreferrer">GitHub</a><a href="https://www.linkedin.com/in/gabriel-perez-diez/" target="_blank" rel="noopener noreferrer">LinkedIn</a></div></footer>
   </div>
+  <script>
+    (() => {
+      const nodes = [...document.querySelectorAll('[data-i18n]')];
+      const spanish = Object.fromEntries(nodes.map(node => [node.dataset.i18n, node.textContent]));
+      const english = {
+        navProjects: 'Projects', navAbout: 'About', navContact: 'Contact',
+        eyebrow: 'Frontend developer · Mendoza, Argentina',
+        heroFirst: 'I build web products ', heroSecond: 'people use.',
+        intro: 'I’m Gabriel. I use React and TypeScript to turn practical needs into clear interfaces, internal tools, and interactive experiences.',
+        viewProjects: 'View projects', letsTalk: 'Get in touch',
+        projectsTitle: 'Projects',
+        projectsIntro: 'A selection of products, tools, and experiences I built to solve real problems.',
+        bildenlex: 'I created the first version of Bildenlex as the sole developer at Corpora: I helped define the product, designed its architecture, and built it end to end. Later, at Aftercode, I designed and developed a new frontend architecture for operational workflows used daily by 5 to 10 people.',
+        bildenlexTags: 'Product · Frontend · Operations',
+        legali: 'I worked on the frontend and integrations of a document automation platform. I built Zod-validated forms and workflows that connect data from Google Sheets, Google Drive, and Airtable to DOCX document generation.',
+        legaliTags: 'Automation · Forms · Integrations',
+        micasa: 'I developed a quoting hub for Mi Casa Decoraciones. It integrates with Tango and lets the team create and save quotes for the business’s day-to-day work.',
+        micasaTags: 'Internal tools · Integrations',
+        nerdconf: 'I built React and WordPress sites, games, and 3D web experiences for in-person events with more than 400 attendees. One project was a human bingo game: I turned the event activity into a web experience used by participants.',
+        nerdconfTags: 'Interactive web · Events · 3D',
+        aboutTitle: 'About',
+        aboutFirst: 'I co-founded Aftercode Software and worked there until September 2026. I took part in requirements discovery, frontend architecture, and delivery of client products, paying attention to both the interface and the integrations behind it.',
+        aboutSecond: 'I work mainly with React, TypeScript, Next.js, and Vite. I also use backend, automation, and testing tools when a product calls for them. I have a Bachelor’s degree in Informatics and Software Development from Universidad del Aconcagua.',
+        experienceTitle: 'Experience',
+        experienceIntro: 'Building software for clients, internal teams, and events.',
+        aftercodeDate: 'Mar 2024 — Sep 2026',
+        aftercodeRole: 'Frontend developer and co-founder. Web products, internal tools, and automation.',
+        nerdconfDate: 'Oct 2021 — Jan 2026',
+        nerdconfRole: 'Contract frontend developer. Websites, games, and digital experiences for events.',
+        corporaDate: 'Jan 2022 — Jul 2023',
+        corporaRole: 'Software developer. Custom products, document automation, and internal systems.'
+      };
+      const titles = {es: 'Gabriel Pérez Diez — Desarrollador frontend', en: 'Gabriel Pérez Diez — Frontend developer'};
+      const descriptions = {
+        es: 'Gabriel Pérez Diez es desarrollador frontend especializado en React y TypeScript. Construye productos web, herramientas internas y experiencias interactivas.',
+        en: 'Gabriel Pérez Diez is a frontend developer specializing in React and TypeScript. He builds web products, internal tools, and interactive experiences.'
+      };
+      const buttons = [...document.querySelectorAll('[data-language]')];
+      const description = document.querySelector('meta[name="description"]');
+      function applyLanguage(language) {
+        const copy = language === 'en' ? english : spanish;
+        nodes.forEach(node => { node.textContent = copy[node.dataset.i18n]; });
+        document.documentElement.lang = language;
+        document.title = titles[language];
+        description.content = descriptions[language];
+        document.querySelector('.brand').setAttribute('aria-label', language === 'en' ? 'Gabriel Pérez Diez, home' : 'Gabriel Pérez Diez, inicio');
+        document.querySelector('nav').setAttribute('aria-label', language === 'en' ? 'Main navigation' : 'Navegación principal');
+        document.querySelector('.language-picker').setAttribute('aria-label', language === 'en' ? 'Language' : 'Idioma');
+        buttons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.language === language)));
+      }
+      let saved;
+      try { saved = localStorage.getItem('gabriel-portfolio-language'); } catch (_) {}
+      const browserLanguage = (navigator.languages && navigator.languages[0]) || navigator.language || 'es';
+      const initial = saved === 'es' || saved === 'en' ? saved : browserLanguage.toLowerCase().startsWith('en') ? 'en' : 'es';
+      applyLanguage(initial);
+      if (!saved) { try { localStorage.setItem('gabriel-portfolio-language', initial); } catch (_) {} }
+      buttons.forEach(button => button.addEventListener('click', () => {
+        const language = button.dataset.language;
+        applyLanguage(language);
+        try { localStorage.setItem('gabriel-portfolio-language', language); } catch (_) {}
+      }));
+    })();
+  </script>
 </body>
 </html>
