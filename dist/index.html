@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f7f4">
+  <meta name="description" content="Gabriel Pérez Diez es desarrollador frontend especializado en React y TypeScript. Construye productos web, herramientas internas y experiencias interactivas.">
+  <title>Gabriel Pérez Diez — Desarrollador frontend</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%231d2421'/%3E%3Cpath d='M39 23a15 15 0 1 0 0 18V33H32' fill='none' stroke='%23d9f36a' stroke-width='7' stroke-linecap='square'/%3E%3C/svg%3E">
+  <style>
+    :root{font-family:Arial,Helvetica,sans-serif;color:#1d2421;background:#f7f7f4;font-synthesis:none;scroll-behavior:smooth}
+    *{box-sizing:border-box}
+    body{margin:0;min-width:320px}
+    a{color:inherit;text-decoration-color:#a8b1a7;text-underline-offset:4px;text-decoration-thickness:1px;transition:color .2s,text-decoration-color .2s}
+    a:hover{color:#526b24;text-decoration-color:#526b24}
+    a:focus-visible{outline:2px solid #526b24;outline-offset:5px}
+    .page{max-width:1160px;margin:auto;padding:0 44px}
+    header{display:flex;align-items:center;justify-content:space-between;padding:37px 0;border-bottom:1px solid #d9ddd6}
+    .brand{font-size:17px;font-weight:700;letter-spacing:-.045em;text-decoration:none}
+    nav{display:flex;gap:30px;font-size:14px}
+    nav a{text-decoration:none}
+    .hero{display:grid;grid-template-columns:minmax(0,1fr) 270px;align-items:center;gap:80px;min-height:510px;padding:80px 0 75px}
+    .eyebrow{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#667265;font-weight:700;margin:0 0 24px}
+    h1{font-size:clamp(48px,6.4vw,88px);letter-spacing:-.075em;line-height:1.02;font-weight:600;max-width:790px;margin:0}
+    h1 span{color:#82907c}
+    .intro{font-size:20px;line-height:1.55;max-width:650px;margin:30px 0 25px;color:#434d44;letter-spacing:-.017em}
+    .hero-links{display:flex;gap:26px;font-size:15px;font-weight:600}
+    .hero-links a{text-decoration:none;border-bottom:1px solid #526b24;padding-bottom:4px}
+    .graphic{width:270px;height:270px;position:relative;border-radius:50%;border:1px solid #c8d1b6;background:radial-gradient(circle at center,#f7f7f4 0 43%,transparent 43.3%),repeating-linear-gradient(0deg,transparent 0 22px,#e4e8de 23px 24px),repeating-linear-gradient(90deg,transparent 0 22px,#e4e8de 23px 24px);overflow:hidden;transform:rotate(-10deg)}
+    .graphic:before{content:"";position:absolute;inset:32px;border:1px solid #b8c5a1;border-radius:50%}
+    .graphic:after{content:"";position:absolute;width:91px;height:91px;left:calc(50% - 45px);top:calc(50% - 45px);border:1px solid #1d2421;border-radius:50%}
+    .orbit{position:absolute;inset:15px;border-radius:50%;animation:turn 18s linear infinite}
+    .orbit:before{content:"";position:absolute;top:-6px;left:50%;width:13px;height:13px;background:#a9ca47;border:3px solid #f7f7f4;border-radius:50%}
+    .graphic b{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(10deg);font-size:42px;letter-spacing:-.09em;font-weight:600}
+    @keyframes turn{to{transform:rotate(360deg)}}
+    section{border-top:1px solid #d9ddd6;padding:64px 0 76px}
+    .section-head{display:grid;grid-template-columns:200px 1fr;gap:38px;margin-bottom:30px}
+    h2{font-size:15px;font-weight:700;margin:0;letter-spacing:-.02em}
+    .section-head p{margin:0;max-width:700px;font-size:18px;line-height:1.5;color:#566057}
+    .project{display:grid;grid-template-columns:200px minmax(0,1fr) 190px;gap:38px;padding:26px 0;border-top:1px solid #e0e4dc;align-items:start}
+    .project:first-of-type{border-top:0}
+    .number{font-size:13px;color:#7d887c;font-variant-numeric:tabular-nums;padding-top:4px}
+    h3{font-size:26px;letter-spacing:-.045em;font-weight:600;line-height:1.15;margin:0 0 9px}
+    .project p{font-size:16px;line-height:1.56;color:#566057;max-width:640px;margin:0}
+    .tags{font-size:13px;line-height:1.5;color:#697469;text-align:right;padding-top:5px}
+    .experience{display:grid;grid-template-columns:200px minmax(0,1fr);gap:38px;padding:24px 0;border-top:1px solid #e0e4dc}
+    .experience h3{font-size:18px;margin:0 0 5px}
+    .experience p{font-size:15px;line-height:1.55;color:#566057;margin:0}
+    .date{color:#697469;font-size:13px;padding-top:4px}
+    .about-grid{display:grid;grid-template-columns:200px minmax(0,1fr);gap:38px}
+    .about-grid p{font-size:17px;line-height:1.65;max-width:730px;margin:0 0 18px;color:#434d44}
+    .about-grid p:last-child{margin-bottom:0}
+    footer{display:flex;justify-content:space-between;gap:30px;border-top:1px solid #d9ddd6;padding:30px 0 46px;font-size:14px;color:#667265}
+    footer div{display:flex;gap:22px}
+    @media(max-width:850px){.page{padding:0 26px}.hero{grid-template-columns:1fr 160px;gap:30px}.graphic{width:160px;height:160px}.graphic b{font-size:28px}.graphic:before{inset:20px}.graphic:after{width:60px;height:60px;left:calc(50% - 30px);top:calc(50% - 30px)}.project{grid-template-columns:80px 1fr;gap:18px}.tags{grid-column:2;text-align:left;padding-top:0}.section-head,.about-grid,.experience{grid-template-columns:80px 1fr;gap:18px}}
+    @media(max-width:600px){.page{padding:0 22px}header{padding:23px 0}nav{gap:18px}.hero{display:flex;flex-direction:column-reverse;align-items:flex-start;gap:30px;padding:55px 0 67px;min-height:0}.graphic{width:126px;height:126px;align-self:flex-end}.graphic b{font-size:23px}.graphic:before{inset:17px}.graphic:after{width:50px;height:50px;left:calc(50% - 25px);top:calc(50% - 25px)}h1{font-size:clamp(47px,12vw,68px)}.intro{font-size:17px;margin-top:24px}.eyebrow{margin-bottom:18px}section{padding:48px 0 57px}.section-head,.about-grid,.experience{display:block}.section-head h2,.about-grid h2{margin-bottom:19px}.section-head p{font-size:16px}.project{grid-template-columns:38px 1fr;gap:12px;padding:23px 0}h3{font-size:22px}.project p{font-size:15px}.tags{font-size:12px}.experience{padding:21px 0}.date{display:block;margin-bottom:9px}footer{display:block}footer div{margin-top:18px}}
+    @media(prefers-reduced-motion:reduce){.orbit{animation:none}*{scroll-behavior:auto!important;transition:none!important}}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <a class="brand" href="#inicio" aria-label="Gabriel Pérez Diez, inicio">Gabriel Pérez Diez</a>
+      <nav aria-label="Navegación principal"><a href="#proyectos">Proyectos</a><a href="#sobre-mi">Sobre mí</a><a href="mailto:gprezdiez@gmail.com">Contacto</a></nav>
+    </header>
+    <main id="inicio">
+      <div class="hero">
+        <div>
+          <p class="eyebrow">Desarrollador frontend · Mendoza, Argentina</p>
+          <h1>Construyo productos web <span>que se usan.</span></h1>
+          <p class="intro">Soy Gabriel. Trabajo con React y TypeScript para convertir necesidades concretas en interfaces claras, herramientas internas y experiencias interactivas.</p>
+          <div class="hero-links"><a href="#proyectos">Ver proyectos</a><a href="mailto:gprezdiez@gmail.com">Hablemos</a></div>
+        </div>
+        <div class="graphic" aria-hidden="true"><div class="orbit"></div><b>G.</b></div>
+      </div>
+      <section id="proyectos" aria-labelledby="proyectos-title">
+        <div class="section-head"><h2 id="proyectos-title">Proyectos</h2><p>Una selección de productos, herramientas y experiencias que construí para resolver problemas reales.</p></div>
+        <article class="project"><span class="number">01 /</span><div><h3>Bildenlex</h3><p>Diseñé y desarrollé la arquitectura frontend de una plataforma que sostiene el trabajo diario de un equipo de 5 a 10 personas. También creé la primera versión del sistema de punta a punta en Corpora.</p></div><span class="tags">Producto · Frontend · Operaciones</span></article>
+        <article class="project"><span class="number">02 /</span><div><h3>Legali / LexFlow</h3><p>Construí formularios validados y flujos de integración para automatizar la creación de documentos, conectando datos de distintas herramientas con la generación de archivos DOCX.</p></div><span class="tags">Automatización · Formularios · Integraciones</span></article>
+        <article class="project"><span class="number">03 /</span><div><h3>Mi Casa Decoraciones</h3><p>Desarrollé un centro de cotizaciones integrado con Tango para crear y guardar presupuestos y acompañar las operaciones del negocio.</p></div><span class="tags">Herramientas internas · Integraciones</span></article>
+        <article class="project"><span class="number">04 /</span><div><h3>Nerdconf</h3><p>Hice sitios y experiencias interactivas para eventos presenciales de más de 400 asistentes. Entre ellas, un bingo humano que llevó la dinámica del evento a una experiencia web.</p></div><span class="tags">Web interactiva · Eventos · 3D</span></article>
+      </section>
+      <section id="sobre-mi" aria-labelledby="sobre-title">
+        <div class="about-grid"><h2 id="sobre-title">Sobre mí</h2><div><p>Soy cofundador de Aftercode Software. Me involucro desde el relevamiento de necesidades hasta la arquitectura frontend y la entrega, con atención tanto a la interfaz como a las integraciones que la hacen funcionar.</p><p>Trabajo principalmente con React, TypeScript, Next.js y Vite. También uso herramientas de backend, automatización y pruebas cuando el producto lo necesita. Soy licenciado en Informática y Desarrollo de Software por la Universidad del Aconcagua.</p></div></div>
+      </section>
+      <section aria-labelledby="trayectoria-title">
+        <div class="section-head"><h2 id="trayectoria-title">Trayectoria</h2><p>Experiencia construyendo software para clientes, equipos internos y eventos.</p></div>
+        <div class="experience"><span class="date">2024 — actualidad</span><div><h3>Aftercode Software</h3><p>Desarrollador frontend y cofundador. Productos web, herramientas internas y automatización.</p></div></div>
+        <div class="experience"><span class="date">2021 — 2026</span><div><h3>Nerdconf</h3><p>Desarrollador frontend por contrato. Sitios, juegos y experiencias digitales para eventos.</p></div></div>
+        <div class="experience"><span class="date">2022 — 2023</span><div><h3>Corpora</h3><p>Desarrollador de software. Productos a medida, automatización documental y sistemas internos.</p></div></div>
+      </section>
+    </main>
+    <footer><span>Gabriel Pérez Diez · Mendoza, Argentina</span><div><a href="mailto:gprezdiez@gmail.com">Email</a><a href="https://github.com/gabsplat" target="_blank" rel="noopener noreferrer">GitHub</a><a href="https://www.linkedin.com/in/gabriel-perez-diez/" target="_blank" rel="noopener noreferrer">LinkedIn</a></div></footer>
+  </div>
+</body>
+</html>
