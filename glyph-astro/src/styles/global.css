@@ -426,7 +426,7 @@ h1 .muted {
   padding: 5px 16px 5px 5px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: #0c0c0df2;
+  background: var(--ink);
 }
 
 .agent-hint {
@@ -534,7 +534,7 @@ h1 .muted {
   margin: 0;
   padding: 8px 14px;
   border-radius: 18px;
-  background: #0c0c0de6;
+  background: var(--ink);
   font: 400 clamp(17px, 1.7vw, 21px) / 1.3 var(--serif);
   text-align: center;
   text-shadow: 0 0 12px var(--ink), 0 0 4px var(--ink);
@@ -552,7 +552,7 @@ h1 .muted {
   padding: 10px;
   border: 1px solid var(--line);
   border-radius: 22px;
-  background: #0c0c0df2;
+  background: var(--ink);
 }
 
 .agent-panel[hidden] {
