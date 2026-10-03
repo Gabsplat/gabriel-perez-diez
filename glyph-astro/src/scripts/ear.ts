@@ -9,6 +9,10 @@ interface Options {
   /** Empezó o terminó una frase. */
   onSpeech: (speaking: boolean) => void;
   onPhrase: (text: string) => void;
+  /** La frase terminó y se está transcribiendo. */
+  onSending?: () => void;
+  /** Se oyó algo, pero la transcripción volvió vacía. */
+  onUnclear?: () => void;
   onError: (message: string) => void;
 }
 
@@ -77,6 +81,7 @@ export function createEar(context: AudioContext, source: MediaStreamAudioSourceN
   let quiet = 0;
 
   async function send(blocks: Float32Array[]) {
+    options.onSending?.();
     try {
       const response = await fetch('/api/transcribe', {
         method: 'POST',
@@ -86,6 +91,7 @@ export function createEar(context: AudioContext, source: MediaStreamAudioSourceN
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const { text = '' } = (await response.json()) as { text?: string };
       if (text.length > 1 && !NOISE.test(text)) options.onPhrase(text);
+      else options.onUnclear?.();
     } catch {
       options.onError('No pude transcribir lo que dijiste.');
     }

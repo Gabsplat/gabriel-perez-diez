@@ -256,6 +256,7 @@ export function createAgent({ field, showProject, section }: Deps) {
   function level(analyser: AnalyserNode) {
     const samples = new Uint8Array(analyser.fftSize);
     let smooth = 0;
+    let heard = performance.now();
     const tick = () => {
       if (!stream) {
         root.style.setProperty('--level', '0');
@@ -266,6 +267,9 @@ export function createAgent({ field, showProject, section }: Deps) {
       for (const sample of samples) sum += ((sample - 128) / 128) ** 2;
       const now = Math.min(1, Math.sqrt(sum / samples.length) * 5);
       smooth += (now - smooth) * (now > smooth ? 0.5 : 0.12);
+      // Si en varios segundos no entra nada de sonido, el micrófono no está llegando
+      if (now > 0.02) heard = performance.now();
+      else if (performance.now() - heard > 6000 && root.dataset.state === 'listening') hint.textContent = 'No me llega sonido del micrófono';
       // La aurora crece con la voz
       root.style.setProperty('--level', smooth.toFixed(3));
       requestAnimationFrame(tick);
@@ -291,6 +295,11 @@ export function createAgent({ field, showProject, section }: Deps) {
       busy: () => root.dataset.state === 'speaking' || root.dataset.state === 'thinking',
       onSpeech: (talking) => setState(talking ? 'hearing' : 'listening'),
       onPhrase: handle,
+      onSending: () => setState('thinking'),
+      onUnclear: () => {
+        rest();
+        hint.textContent = 'No te entendí, ¿repetís?';
+      },
       onError: (message) => {
         hint.textContent = message;
         rest();
