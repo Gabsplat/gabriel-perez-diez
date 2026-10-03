@@ -429,6 +429,23 @@ h1 .muted {
   background: var(--ink);
 }
 
+.agent-more {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.agent-more[aria-expanded='true'] {
+  color: var(--ink);
+  background: var(--paper);
+}
+
 .agent-hint {
   font-size: 12px;
   color: var(--muted);
@@ -845,6 +862,29 @@ h1 .muted {
   .agent-orb {
     width: 56px;
     height: 56px;
+  }
+
+  /* Los ejemplos van en una sola fila que se desliza, para tapar lo menos posible */
+  .agent-panel {
+    width: 100%;
+    padding: 8px;
+  }
+
+  .agent-tips {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .agent-tips button {
+    flex: none;
+  }
+
+  .agent-type,
+  .agent-type input {
+    width: 100%;
   }
 
   .mini {

@@ -43,6 +43,7 @@ export function createAgent({ field, showProject, section }: Deps) {
   const panel = root.querySelector<HTMLElement>('#agent-panel')!;
   const tips = root.querySelector<HTMLElement>('#agent-tips')!;
   const form = root.querySelector<HTMLFormElement>('#agent-type')!;
+  const more = root.querySelector<HTMLButtonElement>('#agent-more')!;
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const session = crypto.randomUUID();
@@ -226,6 +227,8 @@ export function createAgent({ field, showProject, section }: Deps) {
   }
 
   async function handle(text: string) {
+    // Los ejemplos ya cumplieron: se guardan para no tapar la página
+    examples(false);
     setState('thinking');
     sayBox.textContent = '';
     let answer: Answer;
@@ -308,8 +311,26 @@ export function createAgent({ field, showProject, section }: Deps) {
     return true;
   }
 
+  /** Muestra o guarda los ejemplos y el campo de texto. Quedan a mano en el botón «?». */
+  let folding = 0;
+  function examples(show: boolean) {
+    clearTimeout(folding);
+    panel.hidden = !show;
+    more.setAttribute('aria-expanded', String(show));
+    if (!show) return;
+    if (!still) animate(panel.querySelectorAll('button, form'), { y: { from: 10 }, opacity: { from: 0 }, duration: 420, delay: stagger(40), ease: 'outQuart' });
+    // Si nadie los toca, se guardan solos
+    folding = window.setTimeout(() => {
+      if (document.activeElement !== form.querySelector('input')) examples(false);
+    }, 9000);
+  }
+
+  more.addEventListener('click', () => examples(panel.hidden));
+
   function close() {
     open = false;
+    more.hidden = true;
+    clearTimeout(folding);
     stream?.getTracks().forEach((track) => track.stop());
     stream = null;
     ear?.stop();
@@ -331,8 +352,8 @@ export function createAgent({ field, showProject, section }: Deps) {
     open = true;
     play('neutral');
     orb.setAttribute('aria-pressed', 'true');
-    panel.hidden = false;
-    if (!still) animate(panel.querySelectorAll('button, form'), { y: { from: 10 }, opacity: { from: 0 }, duration: 420, delay: stagger(40), ease: 'outQuart' });
+    more.hidden = false;
+    examples(true);
     const hearing = await listen();
     if (!open) return;
     hint.textContent = hearing ? 'Te escucho' : 'Sin micrófono: escribime';
