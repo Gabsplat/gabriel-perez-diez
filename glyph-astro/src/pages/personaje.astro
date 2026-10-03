@@ -1,0 +1,75 @@
+---
+import '../styles/global.css';
+
+const moods = [
+  { id: 'neutral', label: 'Tranquilo' },
+  { id: 'feliz', label: 'Feliz' },
+  { id: 'enojado', label: 'Enojado' },
+  { id: 'triste', label: 'Triste' },
+  { id: 'sorprendido', label: 'Sorprendido' },
+  { id: 'dormido', label: 'Dormido' },
+];
+
+const acts = [
+  { id: 'si', label: 'Sí' },
+  { id: 'no', label: 'No' },
+  { id: 'guino', label: 'Guiño' },
+  { id: 'hablar', label: 'Hablar' },
+];
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#0c0c0d" />
+    <meta name="description" content="Un personaje hecho de letras que cambia de ánimo, habla y reacciona a tu voz." />
+    <title>Personaje · Gabriel Pérez Diez</title>
+    <link rel="icon" href="data:," />
+  </head>
+  <body class="character-page">
+    <canvas id="glyphs" aria-hidden="true"></canvas>
+
+    <header>
+      <a class="brand" href="/">Gabriel Pérez Diez<span aria-hidden="true">.</span></a>
+      <a class="back" href="/#labs">← Labs</a>
+    </header>
+
+    <p id="bubble" class="bubble" aria-live="polite"></p>
+
+    <main class="controls">
+      <p id="caption" class="caption" aria-live="polite"></p>
+      <div class="moods" role="group" aria-label="Estado de ánimo">
+        {
+          moods.map((mood) => (
+            <button type="button" data-mood={mood.id} aria-pressed={mood.id === 'neutral' ? 'true' : 'false'}>
+              {mood.label}
+            </button>
+          ))
+        }
+      </div>
+      <div class="moods" role="group" aria-label="Gestos">
+        {
+          acts.map((item) => (
+            <button type="button" data-act={item.id}>
+              {item.label}
+            </button>
+          ))
+        }
+        <button type="button" id="mic" class="mic" aria-pressed="false">Micrófono</button>
+        <button type="button" id="music" aria-pressed="false">Música</button>
+        <button type="button" id="sound" aria-pressed="true">Sonido</button>
+      </div>
+      <form id="chat" class="chat">
+        <input type="text" maxlength="300" placeholder="Escribile algo" aria-label="Mensaje para el personaje" autocomplete="off" />
+        <button type="submit" aria-label="Enviar">↵</button>
+      </form>
+      <p id="status" class="label" aria-live="polite">Tocalo, escribile o prendé el micrófono y hablale.</p>
+    </main>
+
+    <script>
+      import '../scripts/personaje.ts';
+    </script>
+  </body>
+</html>

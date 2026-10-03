@@ -1,0 +1,13 @@
+{
+  "name": "gabriel-perez-diez",
+  "compatibility_date": "2026-10-01",
+  "main": "./worker/index.js",
+  // Workers AI: Whisper para transcribir la voz
+  "ai": { "binding": "AI" },
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // Solo /api/* pasa por el Worker; el resto se sirve directo como estático
+    "run_worker_first": ["/api/*"]
+  }
+}
