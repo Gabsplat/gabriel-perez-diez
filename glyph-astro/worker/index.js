@@ -153,6 +153,8 @@ async function react(request, env) {
   const moods = Object.keys(EMOTIONS);
 
   try {
+    if (body.mode === 'site') return await siteReact(env, body, text, session);
+
     // 1. Jev clasifica lo que dijo la persona
     const heard = await askJev(env, text, { ...moodQuestions, ...intentQuestions });
     const scores = heard(moods);
@@ -177,6 +179,112 @@ async function react(request, env) {
   } catch (error) {
     return json({ error: String(error.message ?? error) }, 502);
   }
+}
+
+// ── Agente de la portada ────────────────────────────────────────────────────
+// Mismo esquema que el personaje, pero con otras manos: en vez de gestos,
+// navega el sitio, muestra tarjetas y pone música.
+
+const SITE_INTENTS = {
+  proyectos: ['wants to see the projects, the work or the portfolio pieces in general', 'Acá están los proyectos.', 'Vamos a los proyectos.'],
+  labs: ['wants to see the labs, experiments or side projects', 'Te llevo a Labs, donde vuelan las ideas.', 'Labs, allá vamos.'],
+  tecnologias: ['asks which technologies, tools or stack Gabriel uses', 'Este es el stack con el que trabaja.', 'Las tecnologías, acá.'],
+  contacto: ['wants to contact or hire Gabriel, or asks for his email, LinkedIn or GitHub', 'Acá tenés cómo contactarlo.', 'Te dejo sus datos.'],
+  inicio: ['wants to go back to the top or the beginning of the page', 'Volvemos arriba.', 'Al inicio.'],
+  musica: ['asks to play music or put a song on', 'Va música.', 'Dale, pongo algo.'],
+  parar_musica: ['asks to stop, pause or turn off the music', 'Listo, silencio.', 'La saco.'],
+};
+
+const siteQuestions = Object.fromEntries(
+  Object.entries(SITE_INTENTS).map(([intent, [ask]]) => [
+    intent,
+    {
+      type: 'noul',
+      instructions: `\`state.phrase\` is a Spanish phrase said to the voice assistant of Gabriel's portfolio website; it comes from speech-to-text, so it has no punctuation. Is it true that the speaker ${ask}?`,
+      criteria: { true: `The speaker ${ask}.`, false: 'The speaker does not do that.' },
+    },
+  ]),
+);
+
+const SITE = `Sos Glifo, el asistente de voz del portfolio de Gabriel Pérez Diez. Hablás en español rioplatense, breve y con algo de humor de programador.
+
+Lo que sabés de Gabriel:
+- Desarrollador frontend de Mendoza, Argentina. Se define como vibecoder que ejecuta y lee el diff: programa con IA, pero diseña la arquitectura y revisa cada cambio. Licenciado en Informática y Desarrollo de Software (Universidad del Aconcagua).
+- Experiencia: cofundador y frontend en Aftercode Software (mar 2024 a sep 2026); frontend por contrato en Nerdconf (oct 2021 a ene 2026); desarrollador en Corpora (ene 2022 a jul 2023).
+- Proyectos: "bildenlex" (sistema para un estudio jurídico de propiedad intelectual; arquitectura frontend que usan a diario 5 a 10 personas), "legali" (Legali / LexFlow: automatización de procesos legales, formularios con Zod y generación de documentos DOCX), "micasa" (Mi Casa Decoraciones: centro de cotizaciones integrado con Tango), "nerdconf" (sitios, juegos y experiencias web 3D para eventos de más de 400 personas, como un bingo humano).
+- Stack: React, TypeScript, Next.js, Vite, Tailwind CSS, TanStack Query, Zustand, React Hook Form, Zod, NestJS, Firebase, Supabase, integraciones con LLM, Vitest, Playwright, Git, Docker.
+- Labs: experimentos como Dentro del microondas, Cuaderno de máquinas, Carbono y un personaje de letras.
+- Contacto: gprezdiez@gmail.com, LinkedIn y GitHub (gabsplat).
+
+Podés actuar sobre la página. Respondé SOLO con un objeto JSON con estas claves:
+- "reply": lo que decís en voz alta. Una o dos frases cortas, menos de 30 palabras. Sin emojis ni markdown. No inventes datos que no estén arriba.
+- "action": "navegar" para llevar a una sección; "proyecto" para mostrar un proyecto puntual; "musica" para poner música; "parar_musica" para sacarla; "contacto" para mostrar la tarjeta de contacto; "perfil" para mostrar la tarjeta con el resumen de quién es Gabriel; "escribir" para armar una palabra con las letras del fondo; null si solo charlás.
+- "target": con "navegar": "inicio", "proyectos", "labs", "sobre-mi", "tecnologias" o "contacto". Con "proyecto": "bildenlex", "legali", "micasa" o "nerdconf". Si no, null.
+- "music": con "musica": "tranqui" o "movida". Si no, null.
+- "text": con "escribir": la palabra a armar, de hasta 10 letras. Si no, null.
+
+Si preguntan quién es Gabriel o piden un resumen, usá "perfil". Si preguntan por un proyecto o un tema puntual, contestá y además llevá a la sección o proyecto que corresponda.`;
+
+async function siteReact(env, body, text, session) {
+  const words = text.split(/\s+/).length;
+  const heard = await askJev(env, text, siteQuestions);
+  const intents = heard(Object.keys(SITE_INTENTS));
+  // Pedir que saque la música también puntúa alto como «música»: gana sacarla
+  if (intents.parar_musica >= THRESHOLD) intents.musica = 0;
+  const [intent, certainty] = top(intents);
+
+  // Jev resuelve los pedidos cortos y directos sin gastar tokens del modelo
+  // Con música sonando, un pedido sobre música puede ser sacarla o cambiarla: decide el modelo, que conoce el estado
+  const ambiguous = intent === 'musica' && body.state?.music;
+  if (certainty >= 0.85 && words <= 7 && !ambiguous) {
+    const lines = SITE_INTENTS[intent].slice(1);
+    const reply = lines[Math.floor(Math.random() * lines.length)];
+    if (intent === 'musica') return json({ reply, action: 'musica', music: null, by: 'jev' });
+    if (intent === 'parar_musica') return json({ reply, action: 'parar_musica', by: 'jev' });
+    if (intent === 'contacto') return json({ reply, action: 'contacto', by: 'jev' });
+    return json({ reply, action: 'navegar', target: intent, by: 'jev' });
+  }
+  if (!env.OPENCODE_GO_KEY) return json({ reply: 'Ahora no puedo pensar mucho, pero podés pedirme proyectos, música o contacto.', action: null });
+
+  const history = (Array.isArray(body.history) ? body.history : [])
+    .filter((turn) => turn && ['user', 'assistant'].includes(turn.role) && typeof turn.content === 'string')
+    .slice(-MAX_TURNS)
+    .map((turn) => ({ role: turn.role, content: turn.content.slice(0, MAX_CHARS) }));
+  const now = `Ahora mismo: ${body.state?.music ? 'está sonando música' : 'no hay música'}; la persona está viendo la sección "${String(body.state?.section ?? 'inicio').slice(0, 20)}".`;
+  const response = await fetch(GO_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.OPENCODE_GO_KEY}`,
+      'Content-Type': 'application/json',
+      'User-Agent': 'glifo-character-demo/1.0',
+      'x-opencode-session': session,
+    },
+    body: JSON.stringify({
+      model: GO_MODEL,
+      max_tokens: 160,
+      enable_thinking: false,
+      response_format: { type: 'json_object' },
+      messages: [{ role: 'system', content: `${SITE}\n\n${now}` }, ...history, { role: 'user', content: text }],
+    }),
+  });
+  if (!response.ok) return json({ error: `El modelo respondió HTTP ${response.status}.` }, 502);
+  const raw = String((await response.json()).choices?.[0]?.message?.content ?? '');
+  let said;
+  try {
+    said = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
+  } catch {
+    return json({ error: 'El modelo no devolvió una respuesta válida.' }, 502);
+  }
+  const action = oneOf(said.action, ['navegar', 'proyecto', 'musica', 'parar_musica', 'contacto', 'perfil', 'escribir']);
+  const targets = action === 'proyecto' ? ['bildenlex', 'legali', 'micasa', 'nerdconf'] : ['inicio', 'proyectos', 'labs', 'sobre-mi', 'tecnologias', 'contacto'];
+  return json({
+    reply: String(said.reply ?? '').replace(/[*_#`]/g, '').trim().slice(0, 260),
+    action,
+    target: oneOf(said.target, targets),
+    music: oneOf(said.music, ['tranqui', 'movida']),
+    text: action === 'escribir' ? String(said.text ?? '').replace(/[^\p{L}\p{N}!?]/gu, '').slice(0, 10) : null,
+    by: 'modelo',
+  });
 }
 
 // Transcripción con Whisper en Workers AI. El navegador manda un WAV corto con

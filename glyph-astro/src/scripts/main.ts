@@ -1,5 +1,6 @@
 import { animate, stagger, splitText } from 'animejs';
 import { createGlyphField } from './glyph-field';
+import { createAgent } from './agent';
 import { createOrbit } from './orbit';
 
 type Side = 'left' | 'right' | 'center';
@@ -111,7 +112,7 @@ for (const button of projectButtons) {
 
 // Clic en cualquier zona libre: onda expansiva
 window.addEventListener('pointerdown', (event) => {
-  if ((event.target as HTMLElement).closest('a, button, input, summary')) return;
+  if ((event.target as HTMLElement).closest('a, button, input, summary, .agent')) return;
   field.pulse(event.clientX, event.clientY);
 });
 
@@ -155,6 +156,15 @@ function reveals() {
   }, { threshold: 0.3 });
   groups.forEach((group) => observer.observe(group));
 }
+
+createAgent({
+  field,
+  showProject: (id) => {
+    const button = projectButtons.find((item) => item.dataset.project === id);
+    if (button) showProject(button);
+  },
+  section: () => active?.id ?? 'inicio',
+});
 
 intro();
 reveals();

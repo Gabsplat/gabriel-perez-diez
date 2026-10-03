@@ -399,6 +399,294 @@ h1 .muted {
   opacity: 0;
 }
 
+/* ── Glifo en la portada: botón redondo al pie, con aurora al escuchar ── */
+.agent {
+  --level: 0;
+  position: fixed;
+  left: 50%;
+  bottom: clamp(16px, 3svh, 28px);
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: min(92vw, 460px);
+  translate: -50% 0;
+  pointer-events: none;
+}
+
+.agent > * {
+  pointer-events: auto;
+}
+
+.agent-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 5px 16px 5px 5px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #0c0c0df2;
+}
+
+.agent-hint {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.agent-orb {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #1b1b1d;
+  cursor: pointer;
+}
+
+.core {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 50%;
+  background: #1b1b1d;
+}
+
+.core i {
+  width: 4px;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--paper);
+}
+
+/* Aurora: un anillo de colores desenfocado que gira detrás del botón */
+.aurora {
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  background: conic-gradient(#ff7a3d, #b294ff, #6cace4, #7ee0a6, #ffd05c, #ff7a3d);
+  filter: blur(9px);
+  opacity: 0;
+  scale: calc(1 + var(--level) * 0.9);
+  transition: opacity 0.4s;
+  animation: agent-spin 5s linear infinite;
+}
+
+.agent[data-state='listening'] .aurora {
+  opacity: 0.6;
+}
+
+.agent[data-state='hearing'] .aurora,
+.agent[data-state='speaking'] .aurora {
+  opacity: 0.95;
+}
+
+.agent[data-state='thinking'] .aurora {
+  opacity: 0.45;
+  animation-duration: 1.1s;
+}
+
+/* Pensando: los tres puntos saltan en fila */
+.agent[data-state='thinking'] .core i {
+  animation: agent-think 0.9s ease-in-out infinite;
+}
+
+/* Hablando o escuchando voz: los puntos se vuelven barras */
+.agent[data-state='speaking'] .core i,
+.agent[data-state='hearing'] .core i {
+  animation: agent-talk 0.5s ease-in-out infinite alternate;
+}
+
+.core i:nth-child(2) {
+  animation-delay: 0.14s !important;
+}
+
+.core i:nth-child(3) {
+  animation-delay: 0.28s !important;
+}
+
+@keyframes agent-spin {
+  to {
+    rotate: 1turn;
+  }
+}
+
+@keyframes agent-think {
+  50% {
+    translate: 0 -5px;
+    opacity: 0.4;
+  }
+}
+
+@keyframes agent-talk {
+  to {
+    height: 15px;
+  }
+}
+
+.agent-say {
+  min-height: 1.3em;
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 18px;
+  background: #0c0c0de6;
+  font: 400 clamp(17px, 1.7vw, 21px) / 1.3 var(--serif);
+  text-align: center;
+  text-shadow: 0 0 12px var(--ink), 0 0 4px var(--ink);
+}
+
+.agent-say:empty {
+  display: none;
+}
+
+.agent-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: #0c0c0df2;
+}
+
+.agent-panel[hidden] {
+  display: none;
+}
+
+.agent-tips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.agent-tips button,
+.agent-type input {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.agent-tips button {
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.agent-tips button:hover {
+  color: var(--paper);
+  border-color: var(--muted);
+}
+
+.agent-type input {
+  width: 220px;
+  color: var(--paper);
+  text-align: center;
+  outline-offset: -2px;
+}
+
+/* Tarjetas que muestra el asistente */
+.mini {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 34px 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #121213f5;
+  font-size: 12px;
+  box-shadow: 0 16px 40px #000a;
+}
+
+.mini-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mini-text strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.mini-text span {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.mini-text ul {
+  margin: 6px 0 0;
+  padding-left: 16px;
+  color: #b9b6ae;
+  line-height: 1.6;
+}
+
+.mini button,
+.mini a {
+  flex: none;
+  min-height: 30px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: none;
+  line-height: 28px;
+  cursor: pointer;
+}
+
+.mini button:hover,
+.mini a:hover {
+  border-color: var(--muted);
+}
+
+.mini .mini-close {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  min-height: 0;
+  padding: 0 5px;
+  border: 0;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.player [data-player] {
+  width: 34px;
+  padding: 0;
+  font-size: 10px;
+  letter-spacing: -2px;
+}
+
+.eq {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  width: 30px;
+  height: 30px;
+  padding: 7px 5px;
+  border-radius: 9px;
+  background: var(--accent);
+}
+
+.eq i {
+  flex: 1;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--ink);
+  transform: scaleY(0.3);
+  transform-origin: bottom;
+}
+
 /* Página del personaje: una sola pantalla, controles al pie */
 .character-page {
   overflow: hidden;
@@ -588,10 +876,24 @@ h1 .muted {
     grid-template-columns: 1fr;
     gap: 4px;
   }
+
+  /* El asistente queda arriba del menú */
+  .agent {
+    bottom: 74px;
+  }
+
+  .mini {
+    flex-wrap: wrap;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   :root {
     scroll-behavior: auto;
+  }
+
+  .aurora,
+  .core i {
+    animation: none !important;
   }
 }

@@ -1,0 +1,331 @@
+import { animate, stagger } from 'animejs';
+import { createEar } from './ear';
+import type { GlyphField } from './glyph-field';
+import { text as textShape } from './shapes';
+import { blip, musicPlaying, onBeat, play, playMusic, stopMusic, type Style } from './sound';
+
+// Glifo en la portada: un botón redondo al pie con el que se le habla al sitio.
+// Escucha, piensa, contesta en voz alta y actúa sobre la página: lleva a una
+// sección, abre un proyecto, pone música o muestra una tarjeta.
+
+interface Deps {
+  field: GlyphField;
+  showProject: (id: string) => void;
+  section: () => string;
+}
+
+interface Answer {
+  reply?: string;
+  action?: 'navegar' | 'proyecto' | 'musica' | 'parar_musica' | 'contacto' | 'perfil' | 'escribir' | null;
+  target?: string | null;
+  music?: Style | null;
+  text?: string | null;
+}
+
+type State = 'idle' | 'listening' | 'hearing' | 'thinking' | 'speaking';
+
+const TRACKS: Record<Style, { title: string; detail: string }> = {
+  tranqui: { title: 'Tarde de commits', detail: 'Lo-fi · 76 bpm' },
+  movida: { title: 'Deploy en viernes', detail: 'Chiptune · 132 bpm' },
+};
+
+// Ejemplos que se ven junto al botón y como atajos al abrirlo
+const TIPS = ['Mostrame los proyectos', 'Poné música', '¿Quién es Gabriel?', '¿Cómo lo contacto?', 'Escribí hola'];
+
+export function createAgent({ field, showProject, section }: Deps) {
+  const root = document.querySelector<HTMLElement>('#agent')!;
+  const orb = root.querySelector<HTMLButtonElement>('#agent-orb')!;
+  const hint = root.querySelector<HTMLElement>('#agent-hint')!;
+  const sayBox = root.querySelector<HTMLElement>('#agent-say')!;
+  const cards = root.querySelector<HTMLElement>('#agent-cards')!;
+  const panel = root.querySelector<HTMLElement>('#agent-panel')!;
+  const tips = root.querySelector<HTMLElement>('#agent-tips')!;
+  const form = root.querySelector<HTMLFormElement>('#agent-type')!;
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const session = crypto.randomUUID();
+  const history: { role: 'user' | 'assistant'; content: string }[] = [];
+  let stream: MediaStream | null = null;
+  let audio: AudioContext | null = null;
+  let ear: ReturnType<typeof createEar> | null = null;
+  let open = false;
+  let speaking: ReturnType<typeof animate> | null = null;
+  let hush = 0;
+  let track: Style = 'tranqui';
+
+  const setState = (state: State) => (root.dataset.state = state);
+  const rest = () => setState(stream ? 'listening' : 'idle');
+
+  // ── Decir: el texto aparece letra por letra, con su pitido ──
+  function say(text: string) {
+    speaking?.cancel();
+    clearTimeout(hush);
+    setState('speaking');
+    const progress = { shown: 0 };
+    let last = 0;
+    speaking = animate(progress, {
+      shown: text.length,
+      duration: still ? 0 : text.length * 42,
+      ease: 'linear',
+      onUpdate: () => {
+        const shown = Math.floor(progress.shown);
+        if (shown === last) return;
+        last = shown;
+        sayBox.textContent = text.slice(0, shown);
+        blip(text[shown - 1], 0.95 + Math.random() * 0.12);
+      },
+      onComplete: () => {
+        sayBox.textContent = text;
+        rest();
+        hush = window.setTimeout(() => (sayBox.textContent = ''), 3200 + text.length * 50);
+      },
+    });
+  }
+
+  // ── Tarjetas: una a la vez, encima del botón ──
+  function showCard(html: string, kind: string) {
+    cards.innerHTML = `<div class="mini ${kind}">${html}<button type="button" class="mini-close" data-close aria-label="Cerrar">×</button></div>`;
+    if (!still) animate(cards.firstElementChild!, { y: { from: 16 }, scale: { from: 0.92 }, opacity: { from: 0 }, duration: 520, ease: 'outBack(1.4)' });
+  }
+
+  function hideCard(kind?: string) {
+    if (!kind || cards.querySelector(`.${kind}`)) cards.innerHTML = '';
+  }
+
+  function player() {
+    const playing = Boolean(musicPlaying());
+    showCard(
+      `<div class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+       <div class="mini-text"><strong>${TRACKS[track].title}</strong><span>${TRACKS[track].detail} · generada en vivo</span></div>
+       <button type="button" data-player="toggle" aria-label="${playing ? 'Pausar' : 'Reproducir'}">${playing ? '❚❚' : '▶'}</button>
+       <button type="button" data-player="next" aria-label="Siguiente">▶▶</button>`,
+      `player${playing ? ' playing' : ''}`,
+    );
+  }
+
+  function music(style?: Style | null) {
+    track = style ?? track;
+    if (playMusic(track)) player();
+  }
+
+  function contact() {
+    showCard(
+      `<div class="mini-text"><strong>gprezdiez@gmail.com</strong><span>Gabriel Pérez Diez · Mendoza</span></div>
+       <button type="button" data-copy="gprezdiez@gmail.com">Copiar</button>
+       <a href="https://www.linkedin.com/in/gabriel-p%C3%A9rez-diez/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+       <a href="https://github.com/gabsplat" target="_blank" rel="noopener noreferrer">GitHub</a>`,
+      'contact',
+    );
+  }
+
+  function profile() {
+    showCard(
+      `<div class="mini-text"><strong>Gabriel Pérez Diez</strong><span>Frontend · Mendoza, Argentina</span>
+         <ul><li>Cofundó Aftercode Software</li><li>React y TypeScript</li><li>Vibecoder que lee el diff</li></ul></div>
+       <a href="#sobre-mi">Ver más</a>`,
+      'profile',
+    );
+  }
+
+  cards.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement;
+    if (target.closest('[data-close]')) {
+      if (cards.querySelector('.player')) stopMusic();
+      hideCard();
+    }
+    const control = target.closest<HTMLElement>('[data-player]')?.dataset.player;
+    if (control === 'toggle') {
+      if (musicPlaying()) stopMusic();
+      else playMusic(track);
+      player();
+    }
+    if (control === 'next') music(track === 'tranqui' ? 'movida' : 'tranqui');
+    const copy = target.closest<HTMLElement>('[data-copy]');
+    if (copy) {
+      navigator.clipboard?.writeText(copy.dataset.copy!);
+      copy.textContent = 'Copiado';
+    }
+  });
+
+  // Las barras del reproductor marcan el pulso
+  onBeat(() => {
+    const bars = cards.querySelectorAll('.eq i');
+    if (bars.length && !still) animate(bars, { scaleY: [() => 0.5 + Math.random() * 0.7, 0.3], duration: 300, delay: stagger(25), ease: 'outQuad' });
+  });
+
+  // ── Actuar sobre la página ──
+  function perform({ action, target, music: style, text }: Answer) {
+    switch (action) {
+      case 'navegar':
+        document.getElementById(target ?? 'inicio')?.scrollIntoView({ behavior: still ? 'auto' : 'smooth' });
+        break;
+      case 'proyecto':
+        document.getElementById('proyectos')?.scrollIntoView({ behavior: still ? 'auto' : 'smooth' });
+        if (target) showProject(target);
+        break;
+      case 'musica':
+        music(style);
+        break;
+      case 'parar_musica':
+        stopMusic();
+        hideCard('player');
+        break;
+      case 'contacto':
+        contact();
+        break;
+      case 'perfil':
+        profile();
+        break;
+      case 'escribir':
+        if (text) field.morph(`word:${text}`, { build: textShape(text.toUpperCase()), float: 0.012, accent: [255, 122, 61] }, { flight: 'vortex' });
+        break;
+    }
+  }
+
+  /** Sin el Worker (desarrollo local) entiende los pedidos más directos. */
+  function offline(text: string): Answer {
+    const said = text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    if (/\b(para|saca|silencio|apaga)\b/.test(said) && /music|eso|cancion/.test(said)) return { reply: 'Listo, silencio.', action: 'parar_musica' };
+    if (/music|cancion|tema/.test(said)) return { reply: 'Va música.', action: 'musica' };
+    if (/proyecto|trabajo/.test(said)) return { reply: 'Acá están los proyectos.', action: 'navegar', target: 'proyectos' };
+    if (/lab|experimento/.test(said)) return { reply: 'Labs, allá vamos.', action: 'navegar', target: 'labs' };
+    if (/contact|mail|linkedin|github/.test(said)) return { reply: 'Te dejo sus datos.', action: 'contacto' };
+    if (/quien es|gabriel|sobre/.test(said)) return { reply: 'Este es Gabriel.', action: 'perfil' };
+    const word = said.match(/escrib\w*\s+(\w{1,10})/)?.[1];
+    if (word) return { reply: 'Ahí va.', action: 'escribir', text: word };
+    return { reply: 'Pedime proyectos, música o contacto.', action: null };
+  }
+
+  async function handle(text: string) {
+    setState('thinking');
+    sayBox.textContent = '';
+    let answer: Answer;
+    try {
+      const response = await fetch('/api/react', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'site', text, session, history, state: { music: Boolean(musicPlaying()), section: section() } }),
+      });
+      if (!response.ok) throw new Error(String(response.status));
+      answer = (await response.json()) as Answer;
+    } catch {
+      answer = offline(text);
+    }
+    if (answer.reply) {
+      history.push({ role: 'user', content: text }, { role: 'assistant', content: answer.reply });
+      history.splice(0, Math.max(0, history.length - 6));
+    }
+    perform(answer);
+    if (answer.reply) say(answer.reply);
+    else rest();
+  }
+
+  // ── Micrófono ──
+  function level(analyser: AnalyserNode) {
+    const samples = new Uint8Array(analyser.fftSize);
+    let smooth = 0;
+    const tick = () => {
+      if (!stream) {
+        root.style.setProperty('--level', '0');
+        return;
+      }
+      analyser.getByteTimeDomainData(samples);
+      let sum = 0;
+      for (const sample of samples) sum += ((sample - 128) / 128) ** 2;
+      const now = Math.min(1, Math.sqrt(sum / samples.length) * 5);
+      smooth += (now - smooth) * (now > smooth ? 0.5 : 0.12);
+      // La aurora crece con la voz
+      root.style.setProperty('--level', smooth.toFixed(3));
+      requestAnimationFrame(tick);
+    };
+    tick();
+  }
+
+  async function listen() {
+    if (!navigator.mediaDevices?.getUserMedia) return false;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    } catch {
+      return false;
+    }
+    audio = new AudioContext();
+    await audio.resume();
+    const analyser = audio.createAnalyser();
+    analyser.fftSize = 512;
+    const source = audio.createMediaStreamSource(stream);
+    source.connect(analyser);
+    level(analyser);
+    ear = createEar(audio, source, {
+      busy: () => root.dataset.state === 'speaking' || root.dataset.state === 'thinking',
+      onSpeech: (talking) => setState(talking ? 'hearing' : 'listening'),
+      onPhrase: handle,
+      onError: (message) => {
+        hint.textContent = message;
+        rest();
+      },
+    });
+    return true;
+  }
+
+  function close() {
+    open = false;
+    stream?.getTracks().forEach((track) => track.stop());
+    stream = null;
+    ear?.stop();
+    ear = null;
+    audio?.close();
+    audio = null;
+    panel.hidden = true;
+    orb.setAttribute('aria-pressed', 'false');
+    hint.textContent = 'Hablame';
+    setState('idle');
+  }
+
+  orb.addEventListener('click', async () => {
+    if (open) {
+      close();
+      return;
+    }
+    open = true;
+    play('neutral');
+    orb.setAttribute('aria-pressed', 'true');
+    panel.hidden = false;
+    if (!still) animate(panel.querySelectorAll('button, form'), { y: { from: 10 }, opacity: { from: 0 }, duration: 420, delay: stagger(40), ease: 'outQuart' });
+    const hearing = await listen();
+    if (!open) return;
+    hint.textContent = hearing ? 'Te escucho' : 'Sin micrófono: escribime';
+    setState(hearing ? 'listening' : 'idle');
+  });
+
+  tips.innerHTML = TIPS.map((tip) => `<button type="button">${tip}</button>`).join('');
+  tips.addEventListener('click', (event) => {
+    const tip = (event.target as HTMLElement).closest('button');
+    if (tip) handle(tip.textContent!);
+  });
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const input = form.querySelector('input')!;
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    handle(text);
+  });
+
+  // Mientras nadie lo usa, el rótulo va mostrando qué se le puede pedir
+  let example = 0;
+  setInterval(() => {
+    if (open || still) return;
+    example = (example + 1) % (TIPS.length + 1);
+    const next = example ? `«${TIPS[example - 1]}»` : 'Hablame';
+    animate(hint, {
+      opacity: [1, 0],
+      duration: 220,
+      ease: 'inQuad',
+      onComplete: () => {
+        hint.textContent = next;
+        animate(hint, { opacity: [0, 1], y: [6, 0], duration: 320, ease: 'outQuad' });
+      },
+    });
+  }, 3600);
+}
