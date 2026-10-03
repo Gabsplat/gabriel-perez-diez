@@ -1,6 +1,7 @@
 import { animate, stagger } from 'animejs';
+import { act, character, gaze, MOODS, mouth, nod, setMood, type Mood } from './character';
 import { createEar } from './ear';
-import type { GlyphField } from './glyph-field';
+import { createGlyphField, type GlyphField } from './glyph-field';
 import { text as textShape } from './shapes';
 import { blip, musicPlaying, onBeat, play, playMusic, stopMusic, type Style } from './sound';
 
@@ -20,6 +21,7 @@ interface Answer {
   target?: string | null;
   music?: Style | null;
   text?: string | null;
+  mood?: Mood | null;
 }
 
 type State = 'idle' | 'listening' | 'hearing' | 'thinking' | 'speaking';
@@ -53,7 +55,28 @@ export function createAgent({ field, showProject, section }: Deps) {
   let hush = 0;
   let track: Style = 'tranqui';
 
-  const setState = (state: State) => (root.dataset.state = state);
+  // La cara del botón es el mismo personaje de letras, en miniatura
+  const face = createGlyphField(root.querySelector<HTMLCanvasElement>('#agent-face')!, {
+    count: [1000, 1000],
+    size: [2.4, 3.8],
+    portrait: { center: [0.5, 0.74], fit: 0.7 },
+  });
+  document.fonts.ready.then(() => {
+    face.morph('character', { ...character(), float: 0.004, accent: MOODS.neutral.accent }, { flight: 'vortex' });
+  });
+
+  function feel(mood: Mood) {
+    setMood(mood);
+    face.setAccent(MOODS[mood].accent);
+  }
+
+  const LABEL: Partial<Record<State, string>> = { listening: 'Te escucho', hearing: 'Escuchando…', thinking: 'Pensando…', speaking: 'Glifo' };
+  const setState = (state: State) => {
+    root.dataset.state = state;
+    if (open && LABEL[state]) hint.textContent = LABEL[state]!;
+    // Mientras piensa mira hacia arriba
+    animate(gaze, { on: state === 'thinking' ? 1 : 0, x: 0.7, y: -0.9, duration: 350, ease: 'outQuad' });
+  };
   const rest = () => setState(stream ? 'listening' : 'idle');
 
   // ── Decir: el texto aparece letra por letra, con su pitido ──
@@ -72,10 +95,14 @@ export function createAgent({ field, showProject, section }: Deps) {
         if (shown === last) return;
         last = shown;
         sayBox.textContent = text.slice(0, shown);
-        blip(text[shown - 1], 0.95 + Math.random() * 0.12);
+        const char = text[shown - 1];
+        blip(char, 0.95 + Math.random() * 0.12);
+        // La boca se abre en cada letra
+        if (/\p{L}/u.test(char)) animate(mouth, { talk: [0.8, 0.05], duration: 100, ease: 'outQuad' });
       },
       onComplete: () => {
         sayBox.textContent = text;
+        mouth.talk = 0;
         rest();
         hush = window.setTimeout(() => (sayBox.textContent = ''), 3200 + text.length * 50);
       },
@@ -149,6 +176,8 @@ export function createAgent({ field, showProject, section }: Deps) {
 
   // Las barras del reproductor marcan el pulso
   onBeat(() => {
+    // Glifo mueve la cabeza al ritmo
+    if (!still) animate(act, { nod: [0.5, 0], duration: 260, ease: 'outQuad' });
     const bars = cards.querySelectorAll('.eq i');
     if (bars.length && !still) animate(bars, { scaleY: [() => 0.5 + Math.random() * 0.7, 0.3], duration: 300, delay: stagger(25), ease: 'outQuad' });
   });
@@ -216,6 +245,9 @@ export function createAgent({ field, showProject, section }: Deps) {
       history.splice(0, Math.max(0, history.length - 6));
     }
     perform(answer);
+    // Asiente cuando hace algo, y pone la cara que corresponde
+    if (answer.action) nod();
+    feel(answer.mood ?? (answer.action ? 'feliz' : 'neutral'));
     if (answer.reply) say(answer.reply);
     else rest();
   }
@@ -278,6 +310,7 @@ export function createAgent({ field, showProject, section }: Deps) {
     panel.hidden = true;
     orb.setAttribute('aria-pressed', 'false');
     hint.textContent = 'Hablame';
+    feel('neutral');
     setState('idle');
   }
 

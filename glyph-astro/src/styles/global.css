@@ -423,7 +423,7 @@ h1 .muted {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 5px 16px 5px 5px;
+  padding: 5px 18px 5px 5px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--ink);
@@ -437,31 +437,23 @@ h1 .muted {
 
 .agent-orb {
   position: relative;
-  width: 40px;
-  height: 40px;
+  width: 68px;
+  height: 68px;
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: #1b1b1d;
+  background: none;
   cursor: pointer;
 }
 
-.core {
+/* La cara de Glifo, hecha con las mismas letras que el fondo */
+.agent-face {
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
-  background: #1b1b1d;
-}
-
-.core i {
-  width: 4px;
-  height: 4px;
-  border-radius: 4px;
-  background: var(--paper);
+  background: #141415;
 }
 
 /* Aurora: un anillo de colores desenfocado que gira detrás del botón */
@@ -491,41 +483,9 @@ h1 .muted {
   animation-duration: 1.1s;
 }
 
-/* Pensando: los tres puntos saltan en fila */
-.agent[data-state='thinking'] .core i {
-  animation: agent-think 0.9s ease-in-out infinite;
-}
-
-/* Hablando o escuchando voz: los puntos se vuelven barras */
-.agent[data-state='speaking'] .core i,
-.agent[data-state='hearing'] .core i {
-  animation: agent-talk 0.5s ease-in-out infinite alternate;
-}
-
-.core i:nth-child(2) {
-  animation-delay: 0.14s !important;
-}
-
-.core i:nth-child(3) {
-  animation-delay: 0.28s !important;
-}
-
 @keyframes agent-spin {
   to {
     rotate: 1turn;
-  }
-}
-
-@keyframes agent-think {
-  50% {
-    translate: 0 -5px;
-    opacity: 0.4;
-  }
-}
-
-@keyframes agent-talk {
-  to {
-    height: 15px;
   }
 }
 
@@ -882,6 +842,11 @@ h1 .muted {
     bottom: 74px;
   }
 
+  .agent-orb {
+    width: 56px;
+    height: 56px;
+  }
+
   .mini {
     flex-wrap: wrap;
   }
@@ -892,8 +857,7 @@ h1 .muted {
     scroll-behavior: auto;
   }
 
-  .aurora,
-  .core i {
+  .aurora {
     animation: none !important;
   }
 }

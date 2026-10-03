@@ -58,6 +58,8 @@ export const voice = { level: 0 };
 
 /** Gestos cortos que se suman al ánimo: asentir, negar y guiñar. */
 export const act = { nod: 0, turn: 0, wink: 0 };
+/** Mirada forzada, por ejemplo hacia arriba mientras piensa. */
+export const gaze = { on: 0, x: 0, y: 0 };
 /** Apertura de la boca al hablar. Va aparte: animarla junto a `act` cortaba los otros gestos. */
 export const mouth = { talk: 0 };
 
@@ -146,8 +148,10 @@ export function character(): Pick<Shape, 'build' | 'live' | 'marks'> {
     const eye = Math.max(0.04, g.eye * (1 - lids.blink) * (s > 0 ? 1 - act.wink : 1));
     const breath = g.sleep * (0.5 + 0.5 * Math.sin(time * 1.6)) * 0.22;
     const open = Math.min(1, Math.max(g.open + breath, voice.level * 1.25, mouth.talk));
-    const lookX = look.active ? look.x : Math.sin(time * 0.5) * 0.5;
-    const lookY = look.active ? look.y : Math.sin(time * 0.33) * 0.25;
+    const freeX = look.active ? look.x : Math.sin(time * 0.5) * 0.5;
+    const freeY = look.active ? look.y : Math.sin(time * 0.33) * 0.25;
+    const lookX = lerp(freeX, gaze.x, gaze.on);
+    const lookY = lerp(freeY, gaze.y, gaze.on);
     // Párpados: arcos sobre el ancho del ojo
     const lidUp = (l: number) => EYE_Y - (eye * 0.075 + g.squint * 0.02) * (1 - l * l);
     const lidDown = (l: number) => EYE_Y + (eye * 0.045 - g.squint * 0.045) * (1 - l * l);

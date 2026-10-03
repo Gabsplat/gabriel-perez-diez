@@ -48,12 +48,18 @@ interface Options {
   size?: [number, number];
   /** La forma ocupa el centro de la pantalla en vez de un costado. */
   stage?: boolean;
+  /**
+   * Retrato: el lienzo no ocupa la ventana sino su propio elemento. `center` es
+   * dónde va el centro de la forma y `fit` su radio, como fracción del lado menor.
+   */
+  portrait?: { center: [number, number]; fit: number };
 }
 
 export function createGlyphField(canvas: HTMLCanvasElement, options: Options = {}) {
   const [fewer, more] = options.count ?? [800, 1500];
   const [smallest, largest] = options.size ?? [8, 15];
   const stage = options.stage ?? false;
+  const portrait = options.portrait;
   const renderer = createRenderer(canvas, ATLAS, more);
   const data = new Float32Array(more * STRIDE);
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -87,12 +93,12 @@ export function createGlyphField(canvas: HTMLCanvasElement, options: Options = {
 
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
-    w = window.innerWidth;
-    h = window.innerHeight;
+    w = portrait ? canvas.clientWidth : window.innerWidth;
+    h = portrait ? canvas.clientHeight : window.innerHeight;
     canvas.width = Math.round(w * dpr);
     canvas.height = Math.round(h * dpr);
     renderer.resize(canvas.width, canvas.height);
-    const wanted = w < 820 ? fewer : more;
+    const wanted = portrait || w >= 820 ? more : fewer;
     if (wanted !== count) {
       const first = count === 0;
       count = wanted;
@@ -131,6 +137,7 @@ export function createGlyphField(canvas: HTMLCanvasElement, options: Options = {
   }
 
   function place(s: Side) {
+    if (portrait) return { px: portrait.center[0], py: portrait.center[1] };
     if (stage) return { px: 0.5, py: w < 820 ? 0.37 : 0.45 };
     if (w < 820) return { px: 0.5, py: 0.3 };
     if (s === 'left') return { px: 0.27, py: 0.52 };
@@ -276,7 +283,7 @@ export function createGlyphField(canvas: HTMLCanvasElement, options: Options = {
 
     // El scroll rápido afloja las letras
     const sy = window.scrollY;
-    shake += (Math.min(0.12, Math.abs(sy - scrollY) * 0.0016) - shake) * 0.1;
+    if (!portrait) shake += (Math.min(0.12, Math.abs(sy - scrollY) * 0.0016) - shake) * 0.1;
     scrollY = sy;
 
     pointer.sx += (pointer.nx - pointer.sx) * 0.06;
@@ -309,7 +316,7 @@ export function createGlyphField(canvas: HTMLCanvasElement, options: Options = {
     const cosY = Math.cos(rotY), sinY = Math.sin(rotY);
     const cosX = Math.cos(rotX), sinX = Math.sin(rotX);
 
-    const fit = stage ? Math.min(w * 0.46, h * 0.29) : w < 820 ? Math.min(w * 0.4, h * 0.25) : Math.min(w * 0.21, h * 0.31);
+    const fit = portrait ? Math.min(w, h) * portrait.fit : stage ? Math.min(w * 0.46, h * 0.29) : w < 820 ? Math.min(w * 0.4, h * 0.25) : Math.min(w * 0.21, h * 0.31);
     const radius = fit * view.scale;
     // Angosto: la forma sigue a su sección al hacer scroll; ancho: queda fija
     const pinned = w < 820 ? anchor?.() ?? null : null;
@@ -387,10 +394,12 @@ export function createGlyphField(canvas: HTMLCanvasElement, options: Options = {
 
   window.addEventListener('resize', resize);
   window.addEventListener('pointermove', (e) => {
-    pointer.x = e.clientX;
-    pointer.y = e.clientY;
-    pointer.nx = e.clientX / w - 0.5;
-    pointer.ny = e.clientY / h - 0.5;
+    // En un retrato el puntero se mide desde el propio lienzo
+    const box = portrait ? canvas.getBoundingClientRect() : null;
+    pointer.x = e.clientX - (box?.left ?? 0);
+    pointer.y = e.clientY - (box?.top ?? 0);
+    pointer.nx = portrait ? 0 : e.clientX / w - 0.5;
+    pointer.ny = portrait ? 0 : e.clientY / h - 0.5;
   });
   const release = () => (pointer.x = pointer.y = -9999);
   document.documentElement.addEventListener('mouseleave', release);

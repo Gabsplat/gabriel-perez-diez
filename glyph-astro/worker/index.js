@@ -222,6 +222,7 @@ Podés actuar sobre la página. Respondé SOLO con un objeto JSON con estas clav
 - "target": con "navegar": "inicio", "proyectos", "labs", "sobre-mi", "tecnologias" o "contacto". Con "proyecto": "bildenlex", "legali", "micasa" o "nerdconf". Si no, null.
 - "music": con "musica": "tranqui" o "movida". Si no, null.
 - "text": con "escribir": la palabra a armar, de hasta 10 letras. Si no, null.
+- "mood": la cara con la que lo decís: "neutral", "feliz", "enojado", "triste" o "sorprendido".
 
 Si preguntan quién es Gabriel o piden un resumen, usá "perfil". Si preguntan por un proyecto o un tema puntual, contestá y además llevá a la sección o proyecto que corresponda.`;
 
@@ -283,6 +284,7 @@ async function siteReact(env, body, text, session) {
     target: oneOf(said.target, targets),
     music: oneOf(said.music, ['tranqui', 'movida']),
     text: action === 'escribir' ? String(said.text ?? '').replace(/[^\p{L}\p{N}!?]/gu, '').slice(0, 10) : null,
+    mood: oneOf(said.mood, MOODS) ?? 'neutral',
     by: 'modelo',
   });
 }
