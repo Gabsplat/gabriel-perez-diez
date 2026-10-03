@@ -51,8 +51,20 @@ export const MOODS: Record<Mood, { gesture: Gesture; accent: [number, number, nu
   },
 };
 
-const gesture: Gesture = { ...MOODS.neutral.gesture };
-const lids = { blink: 0 };
+export const gesture: Gesture = { ...MOODS.neutral.gesture };
+export const lids = { blink: 0 };
+
+let blinking = false;
+/** Parpadeo en bucle; lo comparten el personaje completo y la carita del botón. */
+export function blinkLoop() {
+  if (blinking || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  blinking = true;
+  const blink = createTimeline({ loop: true });
+  for (const at of [1900, 4600, 4950]) {
+    blink.add(lids, { blink: 1, duration: 80, ease: 'inQuad' }, at).add(lids, { blink: 0, duration: 150, ease: 'outQuad' }, at + 80);
+  }
+  blink.add(lids, { blink: 0, duration: 1200 }, 5200);
+}
 /** Volumen de la voz entre 0 y 1; lo escribe la página cuando el micrófono está activo. */
 export const voice = { level: 0 };
 
@@ -126,7 +138,6 @@ export function character(): Pick<Shape, 'build' | 'live' | 'marks'> {
   let jx = new Float32Array(0);
   let jy = new Float32Array(0);
   let side = new Int8Array(0);
-  let blinking = false;
 
   /** Pelo: una franja que cubre la cabeza y un flequillo peinado hacia un lado. */
   function hair(i: number): [number, number] {
@@ -297,14 +308,7 @@ export function character(): Pick<Shape, 'build' | 'live' | 'marks'> {
       jy = Float32Array.from({ length: n }, () => Math.random() * 2 - 1);
       side = Int8Array.from({ length: n }, (_, i) => (i % 2 ? 1 : -1));
 
-      if (!still && !blinking) {
-        blinking = true;
-        const blink = createTimeline({ loop: true });
-        for (const at of [1900, 4600, 4950]) {
-          blink.add(lids, { blink: 1, duration: 80, ease: 'inQuad' }, at).add(lids, { blink: 0, duration: 150, ease: 'outQuad' }, at + 80);
-        }
-        blink.add(lids, { blink: 0, duration: 1200 }, 5200);
-      }
+      blinkLoop();
       const pts = new Float32Array(n * 3);
       this.live!(pts, n, 0, { x: 0, y: 0, active: false });
       return pts;

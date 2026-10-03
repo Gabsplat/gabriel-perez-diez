@@ -447,15 +447,22 @@ h1 .muted {
 }
 
 .agent-hint {
-  font-size: 12px;
-  color: var(--muted);
+  font-size: 13px;
+  color: var(--paper);
   white-space: nowrap;
+  cursor: pointer;
+}
+
+.agent[data-open] .agent-hint {
+  color: var(--muted);
+  cursor: default;
 }
 
 .agent-orb {
   position: relative;
   width: 68px;
   height: 68px;
+  transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -484,6 +491,45 @@ h1 .muted {
   scale: calc(1 + var(--level) * 0.9);
   transition: opacity 0.4s;
   animation: agent-spin 5s linear infinite;
+}
+
+/* En reposo la aurora late apenas, para invitar a tocar */
+.agent[data-state='idle'] .aurora {
+  animation: agent-spin 5s linear infinite, agent-invite 2.6s ease-in-out infinite;
+}
+
+@keyframes agent-invite {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* Conversando, la carita crece para que se le vean los gestos */
+.agent[data-open] .agent-orb {
+  width: 104px;
+  height: 104px;
+}
+
+/* Micrófono: marca que se le habla. Se va cuando ya está escuchando */
+.agent-mic {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 24px;
+  height: 24px;
+  padding: 4px;
+  border-radius: 50%;
+  background: var(--paper);
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-linecap: round;
+  transition: opacity 0.3s, scale 0.3s;
+}
+
+.agent[data-open] .agent-mic {
+  opacity: 0;
+  scale: 0.5;
 }
 
 .agent[data-state='listening'] .aurora {
@@ -860,8 +906,13 @@ h1 .muted {
   }
 
   .agent-orb {
-    width: 56px;
-    height: 56px;
+    width: 60px;
+    height: 60px;
+  }
+
+  .agent[data-open] .agent-orb {
+    width: 88px;
+    height: 88px;
   }
 
   /* Los ejemplos van en una sola fila que se desliza, para tapar lo menos posible */
@@ -899,5 +950,9 @@ h1 .muted {
 
   .aurora {
     animation: none !important;
+  }
+
+  .agent-orb {
+    transition: none;
   }
 }

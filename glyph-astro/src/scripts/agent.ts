@@ -1,7 +1,8 @@
 import { animate, stagger } from 'animejs';
-import { act, character, gaze, MOODS, mouth, nod, setMood, type Mood } from './character';
+import { act, gaze, MOODS, mouth, nod, setMood, type Mood } from './character';
 import { createEar } from './ear';
 import { createGlyphField, type GlyphField } from './glyph-field';
+import { miniFace } from './mini';
 import { text as textShape } from './shapes';
 import { blip, musicPlaying, onBeat, play, playMusic, stopMusic, type Style } from './sound';
 
@@ -32,6 +33,7 @@ const TRACKS: Record<Style, { title: string; detail: string }> = {
 };
 
 // Ejemplos que se ven junto al botón y como atajos al abrirlo
+const CALL = 'Tocá y hablame';
 const TIPS = ['Mostrame los proyectos', 'Poné música', '¿Quién es Gabriel?', '¿Cómo lo contacto?', 'Escribí hola'];
 
 export function createAgent({ field, showProject, section }: Deps) {
@@ -56,14 +58,15 @@ export function createAgent({ field, showProject, section }: Deps) {
   let hush = 0;
   let track: Style = 'tranqui';
 
-  // La cara del botón es el mismo personaje de letras, en miniatura
+  // La cara del botón es Glifo en versión simple: pocos rasgos y gruesos, para
+  // que se entienda en chico. Crece mientras se conversa con él.
   const face = createGlyphField(root.querySelector<HTMLCanvasElement>('#agent-face')!, {
-    count: [1000, 1000],
-    size: [2.4, 3.8],
-    portrait: { center: [0.5, 0.74], fit: 0.7 },
+    count: [900, 900],
+    size: [2.6, 4],
+    portrait: { center: [0.5, 0.53], fit: 0.44, base: 68 },
   });
   document.fonts.ready.then(() => {
-    face.morph('character', { ...character(), float: 0.004, accent: MOODS.neutral.accent }, { flight: 'vortex' });
+    face.morph('mini', { ...miniFace(), float: 0.006, accent: MOODS.neutral.accent }, { flight: 'vortex' });
   });
 
   function feel(mood: Mood) {
@@ -329,6 +332,7 @@ export function createAgent({ field, showProject, section }: Deps) {
 
   function close() {
     open = false;
+    delete root.dataset.open;
     more.hidden = true;
     clearTimeout(folding);
     stream?.getTracks().forEach((track) => track.stop());
@@ -339,10 +343,29 @@ export function createAgent({ field, showProject, section }: Deps) {
     audio = null;
     panel.hidden = true;
     orb.setAttribute('aria-pressed', 'false');
-    hint.textContent = 'Hablame';
+    hint.textContent = CALL;
     feel('neutral');
     setState('idle');
   }
+
+  // Primera visita: Glifo se presenta y dice cómo se lo usa
+  if (!sessionStorage.getItem('glifo')) {
+    sessionStorage.setItem('glifo', '1');
+    setTimeout(() => {
+      if (open) return;
+      sayBox.textContent = 'Soy Glifo. Tocame y pedime lo que quieras ver.';
+      feel('feliz');
+      hush = window.setTimeout(() => {
+        if (!open) {
+          sayBox.textContent = '';
+          feel('neutral');
+        }
+      }, 6000);
+    }, 3200);
+  }
+
+  // Todo el rótulo sirve para activarlo, no solo la carita
+  hint.addEventListener('click', () => !open && orb.click());
 
   orb.addEventListener('click', async () => {
     if (open) {
@@ -350,6 +373,10 @@ export function createAgent({ field, showProject, section }: Deps) {
       return;
     }
     open = true;
+    root.dataset.open = '';
+    clearTimeout(hush);
+    sayBox.textContent = '';
+    feel('neutral');
     play('neutral');
     orb.setAttribute('aria-pressed', 'true');
     more.hidden = false;
@@ -379,8 +406,9 @@ export function createAgent({ field, showProject, section }: Deps) {
   let example = 0;
   setInterval(() => {
     if (open || still) return;
-    example = (example + 1) % (TIPS.length + 1);
-    const next = example ? `«${TIPS[example - 1]}»` : 'Hablame';
+    // Alterna la invitación con un ejemplo, para que nunca falte el «tocá»
+    example = (example + 1) % (TIPS.length * 2);
+    const next = example % 2 ? `Probá: «${TIPS[(example - 1) / 2]}»` : CALL;
     animate(hint, {
       opacity: [1, 0],
       duration: 220,

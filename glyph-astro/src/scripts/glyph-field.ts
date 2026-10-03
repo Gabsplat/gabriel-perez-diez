@@ -51,8 +51,9 @@ interface Options {
   /**
    * Retrato: el lienzo no ocupa la ventana sino su propio elemento. `center` es
    * dónde va el centro de la forma y `fit` su radio, como fracción del lado menor.
+   * Las letras se dan para un lienzo de `base` píxeles y crecen con él.
    */
-  portrait?: { center: [number, number]; fit: number };
+  portrait?: { center: [number, number]; fit: number; base: number };
 }
 
 export function createGlyphField(canvas: HTMLCanvasElement, options: Options = {}) {
@@ -320,6 +321,7 @@ export function createGlyphField(canvas: HTMLCanvasElement, options: Options = {
     const radius = fit * view.scale;
     // Angosto: la forma sigue a su sección al hacer scroll; ancho: queda fija
     const pinned = w < 820 ? anchor?.() ?? null : null;
+    const grow = portrait ? Math.min(w, h) / portrait.base : 1;
     const wantedY = pinned ?? h * view.py;
     centerY = pinned === null ? wantedY : centerY + (wantedY - centerY) * 0.3;
     const ox = w * view.px, oy = centerY;
@@ -377,7 +379,7 @@ export function createGlyphField(canvas: HTMLCanvasElement, options: Options = {
       if (hidden && hidden[i]) continue;
 
       const depth = Math.max(0, Math.min(1, (z + 1.2) / 2.4));
-      const size = p.flat ? flatSize * radius : p.size;
+      const size = p.flat ? flatSize * radius : p.size * grow;
       const s = quadSize(size * persp * (1 + air * 0.55) * dpr);
       const turn = p.twist * u + (p.flat ? 0 : Math.sin(time * p.f1 + p.seed) * Math.min(1, drift * 5) * 0.5);
       const k = drawn++ * STRIDE;
@@ -393,6 +395,8 @@ export function createGlyphField(canvas: HTMLCanvasElement, options: Options = {
   }
 
   window.addEventListener('resize', resize);
+  // Un retrato puede cambiar de tamaño sin que cambie la ventana
+  if (portrait) new ResizeObserver(resize).observe(canvas);
   window.addEventListener('pointermove', (e) => {
     // En un retrato el puntero se mide desde el propio lienzo
     const box = portrait ? canvas.getBoundingClientRect() : null;
