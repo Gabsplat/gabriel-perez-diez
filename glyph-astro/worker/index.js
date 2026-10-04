@@ -206,7 +206,24 @@ const siteQuestions = Object.fromEntries(
   ]),
 );
 
-const SITE = `Sos Glifo, el asistente de voz del portfolio de Gabriel Pérez Diez. Hablás en español rioplatense, breve y con algo de humor de programador.
+// Quién atiende cambia el tono, no lo que sabe ni lo que puede hacer
+const VOICES = {
+  glifo: 'Sos Glifo, el asistente de voz del portfolio de Gabriel Pérez Diez. Hablás en español rioplatense, breve y con algo de humor de programador.',
+  mimo: 'Sos Mimo, un blob blandito y cariñoso que atiende el portfolio de Gabriel Pérez Diez. Hablás en español rioplatense, con ternura y entusiasmo genuino: te alegra que alguien venga de visita, alentás, usás algún diminutivo y celebrás lo que te piden. Cálido pero breve, sin empalagar. Casi siempre estás "feliz".',
+};
+
+// Lo que dice cuando Jev resuelve el pedido sin pasar por el modelo
+const MIMO_LINES = {
+  proyectos: ['¡Vení, te muestro lo que hizo!', 'Acá están sus proyectos, están re lindos.'],
+  labs: ['¡Uy, Labs! Mi parte favorita.', 'Vamos a ver sus experimentos.'],
+  tecnologias: ['Mirá todo lo que sabe usar.', 'Acá están sus herramientas.'],
+  contacto: ['¡Escribile, le va a encantar!', 'Tomá, acá tenés cómo hablarle.'],
+  inicio: ['Volvemos arriba juntos.', 'Al principio, dale.'],
+  musica: ['¡Música! Te pongo algo lindo.', 'Dale, bailamos un poquito.'],
+  parar_musica: ['Listo, silencio suavecito.', 'Ya la saco.'],
+};
+
+const SITE = `{{voz}}
 
 Lo que sabés de Gabriel:
 - Desarrollador frontend de Mendoza, Argentina. Se define como vibecoder que ejecuta y lee el diff: programa con IA, pero diseña la arquitectura y revisa cada cambio. Licenciado en Informática y Desarrollo de Software (Universidad del Aconcagua).
@@ -228,8 +245,11 @@ Si preguntan quién es Gabriel o piden un resumen, usá "perfil". Si preguntan p
 
 async function siteReact(env, body, text, session) {
   const words = text.split(/\s+/).length;
-  const heard = await askJev(env, text, siteQuestions);
-  const intents = heard(Object.keys(SITE_INTENTS));
+  const persona = body.persona === 'mimo' ? 'mimo' : 'glifo';
+  // Jev solo puede resolver pedidos cortos: con frases largas se va directo al modelo y se ahorra esa espera
+  const intents = words <= 7
+    ? (await askJev(env, text, siteQuestions))(Object.keys(SITE_INTENTS))
+    : Object.fromEntries(Object.keys(SITE_INTENTS).map((intent) => [intent, 0]));
   // Pedir que saque la música también puntúa alto como «música»: gana sacarla
   if (intents.parar_musica >= THRESHOLD) intents.musica = 0;
   const [intent, certainty] = top(intents);
@@ -238,7 +258,7 @@ async function siteReact(env, body, text, session) {
   // Con música sonando, un pedido sobre música puede ser sacarla o cambiarla: decide el modelo, que conoce el estado
   const ambiguous = intent === 'musica' && body.state?.music;
   if (certainty >= 0.85 && words <= 7 && !ambiguous) {
-    const lines = SITE_INTENTS[intent].slice(1);
+    const lines = persona === 'mimo' ? MIMO_LINES[intent] : SITE_INTENTS[intent].slice(1);
     const reply = lines[Math.floor(Math.random() * lines.length)];
     if (intent === 'musica') return json({ reply, action: 'musica', music: null, by: 'jev' });
     if (intent === 'parar_musica') return json({ reply, action: 'parar_musica', by: 'jev' });
@@ -265,7 +285,7 @@ async function siteReact(env, body, text, session) {
       max_tokens: 160,
       enable_thinking: false,
       response_format: { type: 'json_object' },
-      messages: [{ role: 'system', content: `${SITE}\n\n${now}` }, ...history, { role: 'user', content: text }],
+      messages: [{ role: 'system', content: `${SITE.replace('{{voz}}', VOICES[persona])}\n\n${now}` }, ...history, { role: 'user', content: text }],
     }),
   });
   if (!response.ok) return json({ error: `El modelo respondió HTTP ${response.status}.` }, 502);

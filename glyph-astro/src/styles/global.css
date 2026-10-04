@@ -480,6 +480,29 @@ h1 .muted {
   background: #141415;
 }
 
+/* Mimo, el blob: sobresale un poco del botón para poder estirarse y rebotar */
+.agent-blob {
+  position: absolute;
+  inset: -8%;
+  display: block;
+}
+
+.agent-blob svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.blob-heart {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  color: #ff5d8f;
+  font-size: 18px;
+  line-height: 1;
+  pointer-events: none;
+}
+
 /* Aurora: un anillo de colores desenfocado que gira detrás del botón */
 .aurora {
   position: absolute;

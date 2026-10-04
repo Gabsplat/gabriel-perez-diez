@@ -19,7 +19,7 @@ interface Options {
 const RATE = 16000;
 const BLOCK = 4096;
 // Bloques de silencio que cierran la frase y tope de duración
-const QUIET_BLOCKS = 9;
+const QUIET_BLOCKS = 7;
 const MAX_BLOCKS = 130;
 const PREROLL = 4;
 // Whisper inventa estas frases cuando solo hay ruido

@@ -1,4 +1,5 @@
 import { animate, stagger } from 'animejs';
+import { createBlob } from './blob';
 import { act, gaze, MOODS, mouth, nod, setMood, type Mood } from './character';
 import { createEar } from './ear';
 import { createGlyphField, type GlyphField } from './glyph-field';
@@ -58,28 +59,18 @@ export function createAgent({ field, showProject, section }: Deps) {
   let hush = 0;
   let track: Style = 'tranqui';
 
-  // La cara del botón es Glifo en versión simple: pocos rasgos y gruesos, para
-  // que se entienda en chico. Crece mientras se conversa con él.
-  const face = createGlyphField(root.querySelector<HTMLCanvasElement>('#agent-face')!, {
-    count: [900, 900],
-    size: [2.6, 4],
-    portrait: { center: [0.5, 0.53], fit: 0.44, base: 68 },
-  });
-  document.fonts.ready.then(() => {
-    face.morph('mini', { ...miniFace(), float: 0.006, accent: MOODS.neutral.accent }, { flight: 'vortex' });
-  });
+  // Quién atiende: Glifo, la carita de letras, o Mimo, el blob
+  const who = root.dataset.avatar === 'blob' ? mimo(root) : glifo(root);
 
   function feel(mood: Mood) {
-    setMood(mood);
-    face.setAccent(MOODS[mood].accent);
+    who.feel(mood);
   }
 
-  const LABEL: Partial<Record<State, string>> = { listening: 'Te escucho', hearing: 'Escuchando…', thinking: 'Pensando…', speaking: 'Glifo' };
+  const LABEL: Partial<Record<State, string>> = { listening: 'Te escucho', hearing: 'Escuchando…', thinking: 'Pensando…', speaking: who.name };
   const setState = (state: State) => {
     root.dataset.state = state;
     if (open && LABEL[state]) hint.textContent = LABEL[state]!;
-    // Mientras piensa mira hacia arriba
-    animate(gaze, { on: state === 'thinking' ? 1 : 0, x: 0.7, y: -0.9, duration: 350, ease: 'outQuad' });
+    who.state(state);
   };
   const rest = () => setState(stream ? 'listening' : 'idle');
 
@@ -100,13 +91,12 @@ export function createAgent({ field, showProject, section }: Deps) {
         last = shown;
         sayBox.textContent = text.slice(0, shown);
         const char = text[shown - 1];
-        blip(char, 0.95 + Math.random() * 0.12);
-        // La boca se abre en cada letra
-        if (/\p{L}/u.test(char)) animate(mouth, { talk: [0.8, 0.05], duration: 100, ease: 'outQuad' });
+        blip(char, who.pitch * (0.95 + Math.random() * 0.12));
+        who.talk(char);
       },
       onComplete: () => {
         sayBox.textContent = text;
-        mouth.talk = 0;
+        who.quiet();
         rest();
         hush = window.setTimeout(() => (sayBox.textContent = ''), 3200 + text.length * 50);
       },
@@ -180,8 +170,7 @@ export function createAgent({ field, showProject, section }: Deps) {
 
   // Las barras del reproductor marcan el pulso
   onBeat(() => {
-    // Glifo mueve la cabeza al ritmo
-    if (!still) animate(act, { nod: [0.5, 0], duration: 260, ease: 'outQuad' });
+    who.beat();
     const bars = cards.querySelectorAll('.eq i');
     if (bars.length && !still) animate(bars, { scaleY: [() => 0.5 + Math.random() * 0.7, 0.3], duration: 300, delay: stagger(25), ease: 'outQuad' });
   });
@@ -239,7 +228,7 @@ export function createAgent({ field, showProject, section }: Deps) {
       const response = await fetch('/api/react', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: 'site', text, session, history, state: { music: Boolean(musicPlaying()), section: section() } }),
+        body: JSON.stringify({ mode: 'site', persona: who.persona, text, session, history, state: { music: Boolean(musicPlaying()), section: section() } }),
       });
       if (!response.ok) throw new Error(String(response.status));
       answer = (await response.json()) as Answer;
@@ -252,8 +241,10 @@ export function createAgent({ field, showProject, section }: Deps) {
     }
     perform(answer);
     // Asiente cuando hace algo, y pone la cara que corresponde
-    if (answer.action) nod();
-    feel(answer.mood ?? (answer.action ? 'feliz' : 'neutral'));
+    if (answer.action) who.nod();
+    const mood = answer.mood ?? (answer.action ? 'feliz' : 'neutral');
+    feel(mood);
+    if (mood === 'feliz') who.love();
     if (answer.reply) say(answer.reply);
     else rest();
   }
@@ -278,6 +269,7 @@ export function createAgent({ field, showProject, section }: Deps) {
       else if (performance.now() - heard > 6000 && root.dataset.state === 'listening') hint.textContent = 'No me llega sonido del micrófono';
       // La aurora crece con la voz
       root.style.setProperty('--level', smooth.toFixed(3));
+      who.level(smooth);
       requestAnimationFrame(tick);
     };
     tick();
@@ -353,7 +345,7 @@ export function createAgent({ field, showProject, section }: Deps) {
     sessionStorage.setItem('glifo', '1');
     setTimeout(() => {
       if (open) return;
-      sayBox.textContent = 'Soy Glifo. Tocame y pedime lo que quieras ver.';
+      sayBox.textContent = who.hello;
       feel('feliz');
       hush = window.setTimeout(() => {
         if (!open) {
@@ -419,4 +411,70 @@ export function createAgent({ field, showProject, section }: Deps) {
       },
     });
   }, 3600);
+}
+
+// ── Los dos avatares ────────────────────────────────────────────────────────
+// Cada uno traduce lo que le pasa al agente (ánimo, estado, hablar, asentir)
+// a su propio cuerpo.
+
+interface Avatar {
+  name: string;
+  /** Nombre con el que el Worker elige el tono de las respuestas. */
+  persona: string;
+  hello: string;
+  /** Cuánto más aguda o grave suena la voz. */
+  pitch: number;
+  feel(mood: Mood): void;
+  state(state: State): void;
+  talk(char: string): void;
+  quiet(): void;
+  nod(): void;
+  beat(): void;
+  level(value: number): void;
+  love(): void;
+}
+
+/** Glifo: carita de letras, pocos rasgos y gruesos para que se entienda en chico. */
+function glifo(root: HTMLElement): Avatar {
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const face = createGlyphField(root.querySelector<HTMLCanvasElement>('#agent-face')!, {
+    count: [900, 900],
+    size: [2.6, 4],
+    portrait: { center: [0.5, 0.53], fit: 0.44, base: 68 },
+  });
+  document.fonts.ready.then(() => {
+    face.morph('mini', { ...miniFace(), float: 0.006, accent: MOODS.neutral.accent }, { flight: 'vortex' });
+  });
+  return {
+    name: 'Glifo',
+    persona: 'glifo',
+    hello: 'Soy Glifo. Tocame y pedime lo que quieras ver.',
+    pitch: 1,
+    feel(mood) {
+      setMood(mood);
+      face.setAccent(MOODS[mood].accent);
+    },
+    // Mientras piensa mira hacia arriba
+    state: (state) => animate(gaze, { on: state === 'thinking' ? 1 : 0, x: 0.7, y: -0.9, duration: 350, ease: 'outQuad' }),
+    talk(char) {
+      if (/\p{L}/u.test(char)) animate(mouth, { talk: [0.8, 0.05], duration: 100, ease: 'outQuad' });
+    },
+    quiet: () => (mouth.talk = 0),
+    nod,
+    beat: () => !still && animate(act, { nod: [0.5, 0], duration: 260, ease: 'outQuad' }),
+    level() {},
+    love() {},
+  };
+}
+
+/** Mimo: blob blando y cariñoso, con voz más aguda. */
+function mimo(root: HTMLElement): Avatar {
+  const blob = createBlob(root.querySelector<HTMLElement>('#agent-blob')!);
+  return {
+    name: 'Mimo',
+    persona: 'mimo',
+    hello: '¡Hola! Soy Mimo. Tocame y te muestro todo.',
+    pitch: 1.45,
+    ...blob,
+  };
 }
