@@ -1,8 +1,9 @@
 import { createTimeline } from 'animejs';
 import type { Shape } from './shapes';
 
-// Portada: cordillera con nubes y, adelante, una laptop. En la pantalla las
-// letras dejan de ser sueltas y escriben código legible, carácter por carácter.
+// Portada: cordillera con nubes y, adelante, una laptop con código, Messi
+// festejando a un lado y un mate humeante al otro. En la pantalla las letras
+// dejan de ser sueltas y escriben código legible, carácter por carácter.
 
 const CODE = [
   'const gabriel = {',
@@ -22,14 +23,48 @@ const TEXT_TOP = 0.03;
 const SCREEN = { left: -0.5, right: 0.5, top: -0.08, bottom: 0.64 };
 
 const RIDGE: [number, number][] = [
-  [-1.18, 0.14], [-0.62, -0.62], [-0.42, -0.42], [0, -1], [0.36, -0.5], [0.6, -0.7], [1.18, 0.14],
+  [-1.18, -0.12], [-0.62, -0.62], [-0.42, -0.42], [0, -1], [0.36, -0.5], [0.6, -0.7], [1.18, -0.12],
 ];
 // Picos con nieve: x, y, alto de la nieve y pendiente de las laderas
 const SNOW: [number, number, number, number][] = [[0, -1, 0.2, 0.72], [-0.62, -0.62, 0.11, 0.9], [0.6, -0.7, 0.12, 0.7]];
 const CLOUDS: [number, number, number][] = [[-0.82, -0.84, 0.14], [0.72, -0.94, 0.11]];
 const PUFFS: [number, number, number][] = [[-0.85, 0.18, 0.5], [-0.2, -0.28, 0.72], [0.62, -0.02, 0.58], [1.2, 0.24, 0.4]];
 
+// Messi: de pie, con los dos brazos en alto señalando al cielo y la pelota al pie.
+// Pocos trazos y limpios: a este tamaño cada línea de más lo vuelve una mancha.
+const MX = -0.95;
+const FEET = 0.82;
+const BIG = 1.25;
+const tall = ([x, y]: [number, number]): [number, number] => [MX + (x - MX) * BIG, FEET + (y - FEET) * BIG];
+const MESSI: { points: [number, number][]; closed: boolean; weight: number }[] = [
+  { points: [[MX - 0.1, 0.33], [MX + 0.1, 0.33], [MX + 0.09, 0.6], [MX - 0.09, 0.6]], closed: true, weight: 3 },
+  { points: [[MX - 0.1, 0.34], [MX - 0.14, 0.22], [MX - 0.1, 0.1]], closed: false, weight: 1.5 },
+  { points: [[MX + 0.1, 0.34], [MX + 0.14, 0.22], [MX + 0.1, 0.1]], closed: false, weight: 1.5 },
+  { points: [[MX - 0.05, 0.6], [MX - 0.06, 0.8], [MX - 0.1, 0.82]], closed: false, weight: 1.5 },
+  { points: [[MX + 0.05, 0.6], [MX + 0.06, 0.8], [MX + 0.1, 0.82]], closed: false, weight: 1.5 },
+].map((part) => ({ ...part, points: part.points.map((point) => tall(point as [number, number])) }));
+const HEAD: [number, number, number] = [...tall([MX, 0.24]), 0.062 * BIG];
+const BALL: [number, number, number] = [MX + 0.24, 0.76, 0.055];
+const NUMBER = [{ char: '1', x: MX - 0.032, y: tall([MX, 0.46])[1] }, { char: '0', x: MX + 0.032, y: tall([MX, 0.46])[1] }];
+
+// Mate: calabaza con virola, bombilla y vapor
+const TX = 0.95;
+const GOURD: [number, number][] = [
+  [TX - 0.1, 0.5], [TX - 0.15, 0.6], [TX - 0.155, 0.7], [TX - 0.09, 0.81], [TX + 0.09, 0.81], [TX + 0.155, 0.7], [TX + 0.15, 0.6], [TX + 0.1, 0.5],
+];
+const STRAW: [number, number][] = [[TX + 0.01, 0.6], [TX + 0.09, 0.3], [TX + 0.16, 0.22]];
+
+// Qué se mueve en cada cuadro
+const STILL = 0, CLOUD_A = 1, CLOUD_B = 2, STEAM = 3, BOUNCE = 4;
+
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
+
+/** Punto en el borde de un círculo, con algo de relleno. */
+function onCircle([cx, cy, r]: [number, number, number], fill = 0.3): [number, number] {
+  const a = rand(0, Math.PI * 2);
+  const k = Math.random() < fill ? Math.sqrt(Math.random()) : 1 + rand(-0.08, 0.08);
+  return [cx + Math.cos(a) * r * k, cy + Math.sin(a) * r * k];
+}
 const typing = { typed: 0 };
 let started = false;
 
@@ -63,27 +98,48 @@ function onCloud(cx: number, cy: number, s: number): [number, number] {
 
 export function scene(): Pick<Shape, 'build' | 'live' | 'marks'> {
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  // Cada carácter visible del código, con su lugar en la grilla
-  const letters: { char: string; x: number; y: number }[] = [];
+  // Letras con carácter fijo: primero el 10 de Messi, siempre visible, y después
+  // el código, que se va escribiendo
+  const letters: { char: string; x: number; y: number }[] = [...NUMBER];
   CODE.forEach((line, row) => {
     [...line].forEach((char, col) => {
       if (char !== ' ') letters.push({ char, x: TEXT_LEFT + col * CELL, y: TEXT_TOP + row * LINE });
     });
   });
+  const typedFrom = NUMBER.length;
+  const messiWeight = MESSI.reduce((sum, part) => sum + part.weight, 0);
 
   let base = new Float32Array(0);
-  let cloudOf = new Int8Array(0);
+  let motion = new Int8Array(0);
   let textFrom = 0;
   let hidden = new Uint8Array(0);
+
+  function messi(): [number, number, number] {
+    const pick = Math.random();
+    if (pick < 0.14) return [...onCircle(HEAD, 0.2), STILL];
+    if (pick < 0.26) return [...onCircle(BALL, 0.2), BOUNCE];
+    let at = Math.random() * messiWeight;
+    const part = MESSI.find((item) => (at -= item.weight) <= 0) ?? MESSI[0];
+    return [...onPath(part.points, part.closed, 0.006), STILL];
+  }
+
+  function mate(): [number, number, number] {
+    const pick = Math.random();
+    if (pick < 0.56) return [...onPath(GOURD, true, 0.007), STILL];
+    if (pick < 0.68) return [...onPath([[TX - 0.13, 0.57], [TX + 0.13, 0.57]], false, 0.006), STILL];
+    if (pick < 0.88) return [...onPath(STRAW, false, 0.006), STILL];
+    // Vapor: dos hilos que suben; en `live` ondulan
+    return [TX - 0.06 + (Math.random() < 0.5 ? 0 : 0.07), rand(0.16, 0.46), STEAM];
+  }
 
   return {
     build(n) {
       const pts = new Float32Array(n * 3);
-      cloudOf = new Int8Array(n).fill(-1);
+      motion = new Int8Array(n);
       textFrom = n - letters.length;
-      const ridgeEnd = Math.round(textFrom * 0.42);
-      const cloudEnd = ridgeEnd + Math.round(textFrom * 0.2);
-      const frameEnd = cloudEnd + Math.round(textFrom * 0.24);
+      // Reparto de las letras sueltas, de atrás hacia adelante
+      const ends = [0.3, 0.42, 0.58, 0.67, 0.88].map((share) => Math.round(textFrom * share));
+      const [ridgeEnd, cloudEnd, frameEnd, deckEnd, messiEnd] = ends;
       const { left, right, top, bottom } = SCREEN;
 
       for (let i = 0; i < textFrom; i++) {
@@ -102,17 +158,20 @@ export function scene(): Pick<Shape, 'build' | 'live' | 'marks'> {
           }
         } else if (i < cloudEnd) {
           const which = i % CLOUDS.length;
-          cloudOf[i] = which;
+          motion[i] = which ? CLOUD_B : CLOUD_A;
           [x, y] = onCloud(...CLOUDS[which]);
           z = -0.2;
         } else if (i < frameEnd) {
           [x, y] = onPath([[left, top], [right, top], [right, bottom], [left, bottom]], true, 0.011);
-        } else {
+        } else if (i < deckEnd) {
           // Base de la laptop: trapecio y una línea de teclado
-          const deck: [number, number][] = [[left, bottom + 0.03], [right, bottom + 0.03], [right + 0.2, bottom + 0.17], [left - 0.2, bottom + 0.17]];
+          const deck: [number, number][] = [[left, bottom + 0.03], [right, bottom + 0.03], [right + 0.13, bottom + 0.17], [left - 0.13, bottom + 0.17]];
           [x, y] = i % 4 === 0
-            ? onPath([[left - 0.04, bottom + 0.1], [right + 0.04, bottom + 0.1]], false, 0.008)
+            ? onPath([[left - 0.03, bottom + 0.1], [right + 0.03, bottom + 0.1]], false, 0.008)
             : onPath(deck, true, 0.011);
+        } else {
+          [x, y, motion[i]] = i < messiEnd ? messi() : mate();
+          z = 0.2;
         }
         pts[i * 3] = x;
         pts[i * 3 + 1] = y;
@@ -122,14 +181,14 @@ export function scene(): Pick<Shape, 'build' | 'live' | 'marks'> {
         const k = (textFrom + j) * 3;
         pts[k] = letter.x;
         pts[k + 1] = letter.y;
-        pts[k + 2] = 0.16;
+        pts[k + 2] = j < typedFrom ? 0.22 : 0.16;
       });
       base = pts.slice();
 
-      if (still) typing.typed = letters.length;
+      const total = letters.length - typedFrom;
+      if (still) typing.typed = total;
       else if (!started) {
         started = true;
-        const total = letters.length;
         createTimeline({ loop: true })
           .add(typing, { typed: total, duration: total * 58, ease: 'linear' }, 700)
           .add(typing, { typed: 0, duration: 450, ease: 'inQuad' }, 700 + total * 58 + 4200);
@@ -146,15 +205,32 @@ export function scene(): Pick<Shape, 'build' | 'live' | 'marks'> {
 
     live(pts, n, time) {
       if (hidden.length !== n) return;
-      // Las nubes derivan de lado a lado
       for (let i = 0; i < textFrom; i++) {
-        const which = cloudOf[i];
-        if (which < 0) continue;
-        pts[i * 3] = base[i * 3] + Math.sin(time * (which ? 0.33 : 0.45) + which * 2) * 0.07;
+        const k = i * 3;
+        switch (motion[i]) {
+          case CLOUD_A:
+          case CLOUD_B: {
+            // Las nubes derivan de lado a lado
+            const b = motion[i] === CLOUD_B;
+            pts[k] = base[k] + Math.sin(time * (b ? 0.33 : 0.45) + (b ? 2 : 0)) * 0.07;
+            break;
+          }
+          case STEAM: {
+            // El vapor sube, ondula y vuelve a empezar
+            const rise = (0.46 - base[k + 1] + time * 0.05) % 0.3;
+            pts[k + 1] = 0.46 - rise;
+            pts[k] = base[k] + Math.sin(rise * 26 + time * 1.4) * 0.022 * (0.4 + rise * 3);
+            break;
+          }
+          case BOUNCE:
+            // Messi hace jueguito
+            pts[k + 1] = base[k + 1] - Math.abs(Math.sin(time * 3.2)) * 0.16;
+            break;
+        }
       }
-      // Los caracteres todavía no escritos quedan ocultos
+      // Los caracteres del código todavía no escritos quedan ocultos
       const typed = Math.floor(typing.typed);
-      for (let j = 0; j < letters.length; j++) hidden[n - letters.length + j] = j >= typed ? 1 : 0;
+      for (let j = typedFrom; j < letters.length; j++) hidden[n - letters.length + j] = j - typedFrom >= typed ? 1 : 0;
     },
   };
 }

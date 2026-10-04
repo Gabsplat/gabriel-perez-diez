@@ -7,7 +7,8 @@ type Side = 'left' | 'right' | 'center';
 
 const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const canvas = document.querySelector<HTMLCanvasElement>('#glyphs')!;
-const field = createGlyphField(canvas);
+// La portada tiene muchos elementos chicos: hace falta más letras que el valor por defecto
+const field = createGlyphField(canvas, { count: [1200, 2000] });
 const panels = [...document.querySelectorAll<HTMLElement>('[data-shape]')];
 
 let active: HTMLElement | null = null;
