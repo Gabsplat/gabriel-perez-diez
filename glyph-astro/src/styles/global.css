@@ -575,6 +575,21 @@ h1 .muted {
   }
 }
 
+/* Lo que escuchó y los tiempos de cada paso */
+.agent-heard {
+  margin: 0;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--ink);
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.agent-heard:empty {
+  display: none;
+}
+
 .agent-say {
   min-height: 1.3em;
   margin: 0;

@@ -24,6 +24,8 @@ interface Answer {
   music?: Style | null;
   text?: string | null;
   mood?: Mood | null;
+  /** Quién resolvió el pedido: Jev o el modelo. */
+  by?: string;
 }
 
 type State = 'idle' | 'listening' | 'hearing' | 'thinking' | 'speaking';
@@ -42,6 +44,7 @@ export function createAgent({ field, showProject, section }: Deps) {
   const orb = root.querySelector<HTMLButtonElement>('#agent-orb')!;
   const hint = root.querySelector<HTMLElement>('#agent-hint')!;
   const sayBox = root.querySelector<HTMLElement>('#agent-say')!;
+  const heardBox = root.querySelector<HTMLElement>('#agent-heard')!;
   const cards = root.querySelector<HTMLElement>('#agent-cards')!;
   const panel = root.querySelector<HTMLElement>('#agent-panel')!;
   const tips = root.querySelector<HTMLElement>('#agent-tips')!;
@@ -218,7 +221,12 @@ export function createAgent({ field, showProject, section }: Deps) {
     return { reply: 'Pedime proyectos, música o contacto.', action: null };
   }
 
-  async function handle(text: string) {
+  // Lo que entendió y cuánto tardó cada paso: transcripción y respuesta
+  const seconds = (ms: number) => `${(ms / 1000).toFixed(1)} s`;
+
+  async function handle(text: string, heardIn?: number) {
+    const asked = performance.now();
+    heardBox.textContent = `«${text}»${heardIn ? ` · transcripción ${seconds(heardIn)}` : ''}`;
     // Los ejemplos ya cumplieron: se guardan para no tapar la página
     examples(false);
     setState('thinking');
@@ -235,6 +243,7 @@ export function createAgent({ field, showProject, section }: Deps) {
     } catch {
       answer = offline(text);
     }
+    heardBox.textContent += ` · ${answer.by ?? 'sin conexión'} ${seconds(performance.now() - asked)}`;
     if (answer.reply) {
       history.push({ role: 'user', content: text }, { role: 'assistant', content: answer.reply });
       history.splice(0, Math.max(0, history.length - 6));
@@ -336,6 +345,7 @@ export function createAgent({ field, showProject, section }: Deps) {
     panel.hidden = true;
     orb.setAttribute('aria-pressed', 'false');
     hint.textContent = CALL;
+    heardBox.textContent = '';
     feel('neutral');
     setState('idle');
   }

@@ -55,7 +55,9 @@ const moodQuestions = Object.fromEntries(
 );
 
 const GO_URL = 'https://opencode.ai/zen/go/v1/chat/completions';
-const GO_MODEL = 'qwen3.8-flash';
+const GO_MODEL = 'deepseek-v4.1-flash';
+// Sin razonamiento: para una frase corta solo suma espera
+const GO_OPTIONS = { reasoning_effort: 'none' };
 const MAX_TURNS = 6;
 
 const PERSONA = `Sos Glifo, un personaje hecho de letras que vive en el portfolio de Gabriel Pérez Diez, desarrollador frontend de Mendoza, Argentina. Tenés auriculares, buzo con capucha y te gusta programar. Hablás en español rioplatense, con humor y algo de ironía de programador. No sos un asistente: no escribís código ni hacés tareas; charlás.
@@ -106,7 +108,7 @@ async function converse(env, session, history, text, state) {
     body: JSON.stringify({
       model: GO_MODEL,
       max_tokens: 140,
-      enable_thinking: false,
+      ...GO_OPTIONS,
       response_format: { type: 'json_object' },
       messages: [{ role: 'system', content: `${PERSONA}\n\n${now}` }, ...turns, { role: 'user', content: text }],
     }),
@@ -283,7 +285,7 @@ async function siteReact(env, body, text, session) {
     body: JSON.stringify({
       model: GO_MODEL,
       max_tokens: 160,
-      enable_thinking: false,
+      ...GO_OPTIONS,
       response_format: { type: 'json_object' },
       messages: [{ role: 'system', content: `${SITE.replace('{{voz}}', VOICES[persona])}\n\n${now}` }, ...history, { role: 'user', content: text }],
     }),
