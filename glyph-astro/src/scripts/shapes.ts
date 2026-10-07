@@ -196,8 +196,14 @@ const LAB = 0.5;
 
 export const SHAPES: Record<string, Shape> = {
   scatter: { build: scatter, float: 0.2, accent: ORANGE },
-  // Portada: cordillera, nubes y una laptop con código
+  // Portada: laptop con código, Messi y mate; después del `ship()`, el cohete
   summit: { ...scene(), float: 0.006, accent: ORANGE },
+  rocket: {
+    build: path('M50 4c11 11 16 27 16 45v19H34V49C34 31 39 15 50 4z M34 50 20 68v14l14-9z M66 50l14 18v14l-14-9z M44 31a6 6 0 1 0 12 0a6 6 0 1 0-12 0 M41 72h18l-4 13-5-6-5 6z'),
+    float: 0.03,
+    scale: 0.8,
+    accent: ORANGE,
+  },
   // Bildenlex: propiedad intelectual y derecho
   section: { build: text('§', SERIF), float: 0.012, accent: BLUE },
   // Legali / LexFlow: documentos generados

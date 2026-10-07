@@ -18,22 +18,36 @@
 }
 
 :root {
-  --ink: #0c0c0d;
+  --ink: #0a0a0b;
   --paper: #efece4;
+  /* Tres niveles de texto sobre el fondo oscuro */
+  --soft: #b9b6ae;
   --muted: #8d8b84;
-  --line: #2a2a2b;
+  --faint: #5d5b56;
+  --line: #efece417;
+  --surface: #131314;
+  --glass: #0e0e0fb8;
   --accent: #ff7a3d;
   --serif: Instrument, Georgia, serif;
   --sans: Manrope, Arial, sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --gutter: clamp(22px, 4.6vw, 72px);
   color: var(--paper);
   background: var(--ink);
   font-family: var(--sans);
   font-synthesis: none;
   scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
 }
 
 * {
   box-sizing: border-box;
+}
+
+::selection {
+  color: var(--ink);
+  background: var(--accent);
 }
 
 body {
@@ -59,6 +73,8 @@ input:focus-visible {
   outline-offset: 4px;
 }
 
+/* Dos capas fijas: la escena ASCII atrás y las letras sueltas adelante */
+#scene,
 #glyphs {
   position: fixed;
   inset: 0;
@@ -67,6 +83,25 @@ input:focus-visible {
   pointer-events: none;
 }
 
+/* Viñeta: los bordes se oscurecen y la mirada queda en el centro */
+body:not(.character-page)::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(120% 90% at 50% 45%, transparent 55%, #0a0a0bcc);
+  pointer-events: none;
+}
+
+/* Vista de una escena sola, para ajustarla (/?escena=…) */
+.scene-only > :not(#scene) {
+  display: none;
+}
+
+.scene-only::after {
+  content: none !important;
+}
+
+/* ── Encabezado ── */
 header {
   position: fixed;
   inset: 0 0 auto;
@@ -75,7 +110,7 @@ header {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding: 26px clamp(22px, 4.6vw, 72px);
+  padding: 18px var(--gutter);
   font-size: 13px;
 }
 
@@ -89,18 +124,114 @@ header {
   color: var(--accent);
 }
 
+/* El menú es una píldora de vidrio; una marca se desliza hasta la sección activa */
 nav {
+  position: relative;
   display: flex;
-  gap: 26px;
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: 999px;
   color: var(--muted);
+  transition: background 0.4s, border-color 0.4s, backdrop-filter 0.4s;
+}
+
+.scrolled nav {
+  border-color: var(--line);
+  background: var(--glass);
+  backdrop-filter: blur(18px) saturate(1.4);
 }
 
 nav a {
-  transition: color 0.2s;
+  position: relative;
+  padding: 7px 14px;
+  border-radius: 999px;
+  transition: color 0.25s;
 }
 
-nav a:hover {
+nav a:hover,
+nav a[aria-current] {
   color: var(--paper);
+}
+
+.nav-mark {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  width: 0;
+  border-radius: 999px;
+  background: #efece414;
+  opacity: 0;
+  transition: translate 0.5s var(--ease), width 0.5s var(--ease), opacity 0.3s;
+}
+
+.clock {
+  margin: 0;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  font: 11px var(--mono);
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.clock time {
+  color: var(--paper);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Guía lateral: un trazo por sección ── */
+.rail {
+  position: fixed;
+  top: 50%;
+  right: 18px;
+  z-index: 3;
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  translate: 0 -50%;
+}
+
+.rail a {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  height: 22px;
+  font: 10px var(--mono);
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.rail span {
+  opacity: 0;
+  translate: 6px 0;
+  transition: opacity 0.25s, translate 0.35s var(--ease);
+}
+
+.rail i {
+  width: 14px;
+  height: 1px;
+  overflow: hidden;
+  background: var(--faint);
+  color: transparent;
+  transition: width 0.4s var(--ease), background 0.3s;
+}
+
+.rail a:hover span,
+.rail a:focus-visible span {
+  opacity: 1;
+  translate: 0;
+}
+
+.rail a[aria-current] i {
+  width: 28px;
+  background: var(--accent);
 }
 
 main {
@@ -108,13 +239,14 @@ main {
   z-index: 1;
 }
 
+/* ── Secciones ── */
 .panel {
   position: relative;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
-  min-height: 84svh;
-  padding: 90px clamp(22px, 4.6vw, 72px);
+  min-height: 92svh;
+  padding: 110px var(--gutter);
 }
 
 .hero {
@@ -123,11 +255,7 @@ main {
 
 /* Secciones con poco contenido */
 .compact {
-  min-height: 62svh;
-}
-
-.stack {
-  margin-top: 18px;
+  min-height: 70svh;
 }
 
 /* El texto ocupa la mitad que deja libre la forma */
@@ -136,20 +264,59 @@ main {
 }
 
 .copy {
-  max-width: 560px;
+  max-width: 540px;
 }
 
+/* Rótulo: mono, chico y espaciado, con el número de sección adelante */
 .label {
   margin: 0;
-  font-size: 11px;
+  font: 11px var(--mono);
   letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--muted);
 }
 
+.label b {
+  margin-right: 14px;
+  font-weight: 400;
+  color: var(--accent);
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  padding: 6px 12px 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  font: 11px var(--mono);
+  letter-spacing: 0.04em;
+  color: var(--soft);
+}
+
+.eyebrow i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 0 var(--accent);
+  animation: beat 2.4s ease-out infinite;
+}
+
+@keyframes beat {
+  to {
+    box-shadow: 0 0 0 9px transparent;
+  }
+}
+
 h1 {
-  margin: 26px 0 30px;
-  font: 400 clamp(46px, 5.6vw, 92px) / 0.98 var(--serif);
-  letter-spacing: -1.6px;
+  margin: 26px 0 26px;
+  font: 400 clamp(46px, 5.8vw, 96px) / 0.96 var(--serif);
+  letter-spacing: -0.022em;
+  text-wrap: balance;
 }
 
 h1 span {
@@ -160,8 +327,138 @@ h1 .muted {
   color: var(--muted);
 }
 
+/* Párrafo en dos tonos: la primera idea en claro, el resto apagado */
+.intro {
+  max-width: 460px;
+  margin: 0 0 34px;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+.intro strong {
+  font-weight: 400;
+  color: var(--paper);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid var(--paper);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: scale 0.35s var(--ease), background 0.25s, border-color 0.25s, color 0.25s;
+}
+
+.button:hover {
+  background: #fff;
+  border-color: #fff;
+}
+
+.button:active {
+  scale: 0.97;
+}
+
+.button span {
+  font-weight: 400;
+  opacity: 0.6;
+  transition: translate 0.35s var(--ease), opacity 0.25s;
+}
+
+.button:hover span {
+  opacity: 1;
+  translate: 3px 0;
+}
+
+.button.ghost {
+  border-color: var(--line);
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  color: var(--paper);
+}
+
+.button.ghost:hover {
+  border-color: #efece455;
+  background: #efece412;
+}
+
+.hero-foot {
+  position: absolute;
+  inset: auto var(--gutter) 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 0;
+}
+
+.scroll-hint {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font: 11px var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  transition: color 0.25s;
+}
+
+.scroll-hint:hover {
+  color: var(--paper);
+}
+
+.hero-foot .label {
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+}
+
+/* Una línea que se va llenando hacia abajo */
+.scroll-hint i {
+  position: relative;
+  width: 1px;
+  height: 34px;
+  overflow: hidden;
+  background: var(--line);
+}
+
+.scroll-hint i::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--paper);
+  animation: drip 2.2s var(--ease) infinite;
+}
+
+@keyframes drip {
+  from {
+    translate: 0 -100%;
+  }
+  to {
+    translate: 0 100%;
+  }
+}
+
+/* ── Proyectos ── */
 .projects {
-  margin: 20px 0 26px;
+  margin: 22px 0 28px;
   padding: 0;
   list-style: none;
 }
@@ -171,27 +468,36 @@ h1 .muted {
   align-items: baseline;
   gap: 18px;
   width: 100%;
-  padding: 5px 0;
+  padding: 6px 0;
   border: 0;
   background: none;
-  color: #5d5b56;
-  font: 400 clamp(32px, 3.5vw, 54px) / 1.08 var(--serif);
-  letter-spacing: -0.7px;
+  color: var(--faint);
+  font: 400 clamp(32px, 3.6vw, 56px) / 1.06 var(--serif);
+  letter-spacing: -0.015em;
   text-align: left;
   cursor: pointer;
-  transition: color 0.25s, transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: color 0.3s, translate 0.5s var(--ease);
 }
 
 .projects button span {
   width: 22px;
-  font: 400 11px var(--sans);
-  letter-spacing: 0.08em;
-  color: var(--muted);
+  font: 11px var(--mono);
+  letter-spacing: 0.06em;
+  color: var(--faint);
+  transition: color 0.3s;
+}
+
+.projects button:hover {
+  color: var(--soft);
 }
 
 .projects button[aria-pressed='true'] {
   color: var(--paper);
-  transform: translateX(10px);
+  translate: 12px 0;
+}
+
+.projects button[aria-pressed='true'] span {
+  color: var(--accent);
 }
 
 /* Reserva el alto del texto más largo para que la lista no salte */
@@ -200,35 +506,59 @@ h1 .muted {
 }
 
 .story {
-  margin: 0 0 26px;
+  margin: 0 0 22px;
   font-size: 15px;
-  line-height: 1.8;
-  color: #b9b6ae;
+  line-height: 1.75;
+  color: var(--soft);
+  text-wrap: pretty;
 }
 
-.tags {
+/* Etiquetas: píldoras de contorno */
+.tags,
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
   margin: 0;
-  padding-top: 18px;
-  border-top: 1px solid var(--line);
-  font-size: 12px;
+}
+
+.tags span,
+.chips span {
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font: 11px var(--mono);
+  letter-spacing: 0.02em;
   color: var(--muted);
+  white-space: nowrap;
 }
 
-.scroll-hint {
-  position: absolute;
-  left: clamp(22px, 4.6vw, 72px);
-  bottom: 96px;
-  font: 30px var(--serif);
-  transition: transform 0.2s;
+.chips span {
+  color: var(--soft);
+  transition: color 0.25s, border-color 0.25s;
 }
 
-.scroll-hint:hover {
-  transform: translateY(4px);
+.chips span:hover {
+  color: var(--paper);
+  border-color: #efece455;
+}
+
+.tags a {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--accent);
 }
 
 .lead {
-  margin: 18px 0 30px;
-  font: 400 clamp(25px, 2.5vw, 36px) / 1.22 var(--serif);
+  margin: 20px 0 32px;
+  font: 400 clamp(25px, 2.6vw, 38px) / 1.18 var(--serif);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.lead span {
+  color: var(--muted);
 }
 
 .rows {
@@ -241,21 +571,23 @@ h1 .muted {
   display: grid;
   grid-template-columns: 150px 1fr;
   gap: 22px;
-  padding: 16px 0;
+  padding: 18px 0;
   border-top: 1px solid var(--line);
   font-size: 13px;
   line-height: 1.6;
-  color: #b9b6ae;
+  color: var(--soft);
 }
 
-.rows span {
-  font-size: 11px;
+.rows li > span {
+  padding-top: 2px;
+  font: 11px var(--mono);
+  letter-spacing: 0.02em;
   color: var(--muted);
 }
 
 .rows h3 {
   margin: 0 0 3px;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--paper);
 }
@@ -264,30 +596,11 @@ h1 .muted {
   margin: 0;
 }
 
-.rows h3 a:hover {
-  color: var(--accent);
+.stack {
+  margin-top: 22px;
 }
 
-.rows .row-tags {
-  margin-top: 6px;
-  font-size: 11px;
-  color: var(--muted);
-}
-
-.stack p {
-  font-size: 14px;
-  color: var(--paper);
-}
-
-.intro {
-  max-width: 470px;
-  margin: 0 0 30px;
-  font-size: 16px;
-  line-height: 1.7;
-  color: #b9b6ae;
-}
-
-/* Tarjetas de Labs: capa fija, como las letras */
+/* ── Tarjetas de Labs: capa fija, como las letras ── */
 .orbit {
   position: fixed;
   inset: 0;
@@ -299,30 +612,30 @@ h1 .muted {
   position: absolute;
   top: 0;
   left: 0;
-  width: clamp(150px, 13.5vw, 200px);
+  width: clamp(150px, 13.5vw, 204px);
   padding: 6px 6px 0;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  background: #151516;
+  border-radius: 16px;
+  background: var(--surface);
   color: var(--muted);
   pointer-events: auto;
   will-change: transform;
-  box-shadow: 0 18px 40px #0009;
-  transition: border-color 0.25s, color 0.25s;
+  box-shadow: 0 24px 50px #000b, inset 0 1px 0 #ffffff0d;
+  transition: border-color 0.3s, color 0.3s, box-shadow 0.3s;
 }
 
 .card img {
   display: block;
   width: 100%;
   height: auto;
-  border-radius: 6px;
+  border-radius: 11px;
   pointer-events: none;
 }
 
 .card span {
   display: block;
-  padding: 8px 4px 9px;
-  font-size: 11px;
+  padding: 9px 6px 10px;
+  font-size: 12px;
   text-align: left;
   white-space: nowrap;
   overflow: hidden;
@@ -334,10 +647,24 @@ h1 .muted {
   z-index: 1;
   border-color: var(--accent);
   color: var(--paper);
+  box-shadow: 0 30px 60px #000d, 0 0 0 4px #ff7a3d1f;
 }
 
 .lab-detail {
   min-height: 190px;
+}
+
+.lab-empty {
+  margin: 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  font: 11px var(--mono);
+  letter-spacing: 0.04em;
+  color: var(--faint);
+}
+
+.lab-detail:has(article:not([hidden])) .lab-empty {
+  display: none;
 }
 
 .lab-detail h3 {
@@ -345,61 +672,56 @@ h1 .muted {
   font: 400 clamp(28px, 2.8vw, 40px) / 1.05 var(--serif);
 }
 
-.lab-detail .tags {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.lab-detail .tags a {
-  color: var(--accent);
-}
-
+/* ── Contacto ── */
 .talk {
   display: flex;
   align-items: center;
   gap: 24px;
-  margin: 16px 0 26px;
-  font: 400 clamp(54px, 6.4vw, 104px) / 1 var(--serif);
-  letter-spacing: -1px;
+  margin: 18px 0 34px;
+  font: 400 clamp(60px, 7.4vw, 124px) / 0.95 var(--serif);
+  letter-spacing: -0.025em;
 }
 
 .talk span {
-  font-size: 0.6em;
+  font-size: 0.5em;
   color: var(--muted);
-  transition: transform 0.2s, color 0.2s;
+  transition: translate 0.4s var(--ease), color 0.25s;
 }
 
 .talk:hover span {
-  transform: translate(5px, -5px);
+  translate: 6px -6px;
   color: var(--accent);
 }
 
-.email {
-  display: inline-block;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--line);
-  font-size: 14px;
-}
-
-.links {
+footer {
+  position: absolute;
+  inset: auto var(--gutter) 30px;
   display: flex;
-  gap: 24px;
-  margin: 34px 0 0;
-  font-size: 12px;
-  color: var(--muted);
+  justify-content: space-between;
+  gap: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  font: 11px var(--mono);
+  letter-spacing: 0.04em;
+  color: var(--faint);
 }
 
-.links a:hover {
-  color: var(--paper);
-}
-
-/* Los bloques esperan ocultos solo si hay JavaScript para mostrarlos */
-.js [data-reveal]:not(.shown) > * {
+/* ── Aparición: cada bloque sube, se enfoca y aparece, uno tras otro ── */
+.js [data-reveal] > * {
   opacity: 0;
+  translate: 0 26px;
+  filter: blur(10px);
+  transition: opacity 0.9s var(--ease), translate 1.1s var(--ease), filter 0.9s var(--ease);
+  transition-delay: calc(var(--i, 0) * 80ms + 80ms);
 }
 
-/* ── Glifo en la portada: botón redondo al pie, con aurora al escuchar ── */
+.js [data-reveal].shown > * {
+  opacity: 1;
+  translate: 0;
+  filter: none;
+}
+
+/* ── Mimo: una barra de vidrio al pie, con aurora al escuchar ── */
 .agent {
   --level: 0;
   position: fixed;
@@ -426,7 +748,14 @@ h1 .muted {
   padding: 5px 18px 5px 5px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--ink);
+  background: var(--glass);
+  backdrop-filter: blur(20px) saturate(1.4);
+  box-shadow: 0 18px 50px #000a, inset 0 1px 0 #ffffff0f;
+  transition: border-color 0.3s, padding 0.4s var(--ease);
+}
+
+.agent-bar:hover {
+  border-color: #efece433;
 }
 
 .agent-more {
@@ -437,8 +766,9 @@ h1 .muted {
   border-radius: 50%;
   background: none;
   color: var(--muted);
-  font-size: 12px;
+  font: 12px var(--mono);
   cursor: pointer;
+  transition: color 0.2s, background 0.2s;
 }
 
 .agent-more[aria-expanded='true'] {
@@ -453,16 +783,20 @@ h1 .muted {
   cursor: pointer;
 }
 
+/* Conversando, el rótulo pasa a ser el estado: una palabra, en mono */
 .agent[data-open] .agent-hint {
+  font: 11px var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--muted);
   cursor: default;
 }
 
 .agent-orb {
   position: relative;
-  width: 68px;
-  height: 68px;
-  transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  width: 60px;
+  height: 60px;
+  transition: width 0.5s var(--ease), height 0.5s var(--ease);
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -470,21 +804,20 @@ h1 .muted {
   cursor: pointer;
 }
 
-/* La cara de Glifo, hecha con las mismas letras que el fondo */
-.agent-face {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: #141415;
-}
-
 /* Mimo, el blob: sobresale un poco del botón para poder estirarse y rebotar */
 .agent-blob {
   position: absolute;
   inset: -8%;
   display: block;
+  transition: scale 0.4s var(--ease);
+}
+
+.agent-orb:hover .agent-blob {
+  scale: 1.07;
+}
+
+.agent-orb:active .agent-blob {
+  scale: 0.94;
 }
 
 .agent-blob svg {
@@ -527,7 +860,7 @@ h1 .muted {
   }
 }
 
-/* Conversando, la carita crece para que se le vean los gestos */
+/* Conversando, Mimo crece para que se le vean los gestos */
 .agent[data-open] .agent-orb {
   width: 104px;
   height: 104px;
@@ -575,13 +908,16 @@ h1 .muted {
   }
 }
 
-/* Lo que escuchó y los tiempos de cada paso */
+/* Lo que escuchó, en cursiva apagada, y los tiempos de cada paso en mono */
 .agent-heard {
   margin: 0;
-  padding: 4px 12px;
+  padding: 5px 12px;
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--ink);
-  font-size: 11px;
+  background: var(--glass);
+  backdrop-filter: blur(16px);
+  font: 10px var(--mono);
+  letter-spacing: 0.02em;
   color: var(--muted);
   text-align: center;
 }
@@ -593,12 +929,14 @@ h1 .muted {
 .agent-say {
   min-height: 1.3em;
   margin: 0;
-  padding: 8px 14px;
-  border-radius: 18px;
-  background: var(--ink);
-  font: 400 clamp(17px, 1.7vw, 21px) / 1.3 var(--serif);
+  padding: 10px 18px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--glass);
+  backdrop-filter: blur(20px) saturate(1.4);
+  font: 400 clamp(18px, 1.7vw, 22px) / 1.3 var(--serif);
   text-align: center;
-  text-shadow: 0 0 12px var(--ink), 0 0 4px var(--ink);
+  text-wrap: balance;
 }
 
 .agent-say:empty {
@@ -613,7 +951,9 @@ h1 .muted {
   padding: 10px;
   border: 1px solid var(--line);
   border-radius: 22px;
-  background: var(--ink);
+  background: var(--glass);
+  backdrop-filter: blur(20px) saturate(1.4);
+  box-shadow: 0 18px 50px #000a, inset 0 1px 0 #ffffff0f;
 }
 
 .agent-panel[hidden] {
@@ -629,23 +969,28 @@ h1 .muted {
 
 .agent-tips button,
 .agent-type input {
-  min-height: 30px;
-  padding: 0 12px;
+  min-height: 32px;
+  padding: 0 13px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: none;
-  color: var(--muted);
+  color: var(--soft);
   font-size: 12px;
 }
 
 .agent-tips button {
   cursor: pointer;
-  transition: color 0.2s, border-color 0.2s;
+  transition: color 0.2s, border-color 0.2s, background 0.2s, scale 0.3s var(--ease);
 }
 
 .agent-tips button:hover {
   color: var(--paper);
-  border-color: var(--muted);
+  border-color: #efece455;
+  background: #efece40d;
+}
+
+.agent-tips button:active {
+  scale: 0.96;
 }
 
 .agent-type input {
@@ -653,6 +998,10 @@ h1 .muted {
   color: var(--paper);
   text-align: center;
   outline-offset: -2px;
+}
+
+.agent-type input::placeholder {
+  color: var(--faint);
 }
 
 /* Tarjetas que muestra el asistente */
@@ -663,10 +1012,11 @@ h1 .muted {
   gap: 12px;
   padding: 10px 34px 10px 12px;
   border: 1px solid var(--line);
-  border-radius: 18px;
-  background: #121213f5;
+  border-radius: 20px;
+  background: var(--glass);
+  backdrop-filter: blur(20px) saturate(1.4);
   font-size: 12px;
-  box-shadow: 0 16px 40px #000a;
+  box-shadow: 0 18px 50px #000a, inset 0 1px 0 #ffffff0f;
 }
 
 .mini-text {
@@ -688,7 +1038,7 @@ h1 .muted {
 .mini-text ul {
   margin: 6px 0 0;
   padding-left: 16px;
-  color: #b9b6ae;
+  color: var(--soft);
   line-height: 1.6;
 }
 
@@ -702,11 +1052,12 @@ h1 .muted {
   background: none;
   line-height: 28px;
   cursor: pointer;
+  transition: border-color 0.2s;
 }
 
 .mini button:hover,
 .mini a:hover {
-  border-color: var(--muted);
+  border-color: #efece455;
 }
 
 .mini .mini-close {
@@ -872,6 +1223,12 @@ h1 .muted {
   background: #ff4a4a;
 }
 
+@media (max-width: 1100px) {
+  .clock {
+    display: none;
+  }
+}
+
 @media (max-width: 819px) {
   /* Fondo para que el nombre no se mezcle con las letras que pasan por debajo */
   header {
@@ -880,37 +1237,43 @@ h1 .muted {
   }
 
   /* El menú baja al pie de la pantalla, donde hay lugar para los cuatro enlaces */
-  nav {
+  nav,
+  .scrolled nav {
     position: fixed;
     left: 14px;
     right: 14px;
     bottom: 14px;
     justify-content: space-around;
-    gap: 0;
-    padding: 4px;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    background: #0c0c0df2;
-    font-size: 13px;
+    border-color: var(--line);
+    background: var(--glass);
+    backdrop-filter: blur(18px) saturate(1.4);
   }
 
   nav a {
     padding: 11px 10px;
   }
 
+  .rail {
+    display: none;
+  }
+
   /* En pantallas angostas la forma queda arriba y el texto abajo */
   .panel {
     grid-template-columns: 1fr;
     align-items: end;
-    padding: 56svh 22px 96px;
+    padding: 56svh 22px 150px;
   }
 
   .panel[data-side='left'] .copy {
     grid-column: 1;
   }
 
-  .scroll-hint {
+  .hero-foot {
     display: none;
+  }
+
+  .intro {
+    font-size: 16px;
   }
 
   .project-detail {
@@ -919,6 +1282,21 @@ h1 .muted {
 
   .card {
     width: 112px;
+    border-radius: 12px;
+  }
+
+  .card img {
+    border-radius: 8px;
+  }
+
+  footer {
+    inset: auto 22px 150px;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  #contacto {
+    padding-bottom: 230px;
   }
 
   /* Página del personaje: controles más compactos */
@@ -940,12 +1318,12 @@ h1 .muted {
 
   /* El asistente queda arriba del menú */
   .agent {
-    bottom: 74px;
+    bottom: 76px;
   }
 
   .agent-orb {
-    width: 60px;
-    height: 60px;
+    width: 54px;
+    height: 54px;
   }
 
   .agent[data-open] .agent-orb {
@@ -986,11 +1364,15 @@ h1 .muted {
     scroll-behavior: auto;
   }
 
-  .aurora {
+  .aurora,
+  .eyebrow i,
+  .scroll-hint i::after {
     animation: none !important;
   }
 
-  .agent-orb {
+  .agent-orb,
+  .nav-mark,
+  .js [data-reveal] > * {
     transition: none;
   }
 }

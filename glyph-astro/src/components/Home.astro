@@ -1,15 +1,18 @@
 ---
-// Página completa del portfolio. `avatar` elige quién atiende: Glifo, la carita
-// de letras, o Mimo, el blob.
+// Página completa del portfolio. Atiende Mimo, el blob.
 import '../styles/global.css';
 import { experience, labs, projects, stack } from '../data/site';
 
-interface Props {
-  avatar?: 'glifo' | 'blob';
-}
-
-const { avatar = 'glifo' } = Astro.props;
-const name = avatar === 'blob' ? 'Mimo' : 'Glifo';
+// Secciones del recorrido: alimentan el menú y la guía lateral
+const sections = [
+  { id: 'inicio', name: 'Inicio' },
+  { id: 'proyectos', name: 'Proyectos' },
+  { id: 'labs', name: 'Labs' },
+  { id: 'sobre-mi', name: 'Sobre mí' },
+  { id: 'tecnologias', name: 'Tecnologías' },
+  { id: 'contacto', name: 'Contacto' },
+];
+const menu = sections.filter((section) => !['inicio', 'tecnologias'].includes(section.id));
 ---
 
 <!doctype html>
@@ -17,12 +20,12 @@ const name = avatar === 'blob' ? 'Mimo' : 'Glifo';
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta name="theme-color" content="#0c0c0d" />
+    <meta name="theme-color" content="#0a0a0b" />
     <meta
       name="description"
       content="Gabriel Pérez Diez. Desarrollador frontend. Vibecoder que ejecuta y lee el diff."
     />
-    <title>{avatar === 'blob' ? 'Mimo · Gabriel Pérez Diez' : 'Gabriel Pérez Diez · Frontend'}</title>
+    <title>Gabriel Pérez Diez · Frontend</title>
     <link rel="icon" href="data:," />
     <link rel="preload" href="/fonts/instrument-serif.ttf" as="font" type="font/ttf" crossorigin />
     <script is:inline>
@@ -30,38 +33,57 @@ const name = avatar === 'blob' ? 'Mimo' : 'Glifo';
     </script>
   </head>
   <body>
+    <canvas id="scene" aria-hidden="true"></canvas>
     <canvas id="glyphs" aria-hidden="true"></canvas>
 
-    <header>
+    <header id="top">
       <a class="brand" href="#inicio">Gabriel Pérez Diez<span aria-hidden="true">.</span></a>
       <nav aria-label="Navegación principal">
-        <a href="#proyectos">Proyectos</a>
-        <a href="#labs">Labs</a>
-        <a href="#sobre-mi">Sobre mí</a>
-        <a href="#contacto">Contacto</a>
+        <span class="nav-mark" aria-hidden="true"></span>
+        {menu.map((section) => <a href={`#${section.id}`} data-nav={section.id}>{section.name}</a>)}
       </nav>
+      <p class="clock">Mendoza <time id="clock">--:--</time></p>
     </header>
 
+    <ol class="rail" aria-label="Secciones">
+      {
+        sections.map((section, index) => (
+          <li>
+            <a href={`#${section.id}`} data-rail={section.id}>
+              <span>{section.name}</span>
+              <i aria-hidden="true">0{index + 1}</i>
+            </a>
+          </li>
+        ))
+      }
+    </ol>
+
     <main>
-      <section class="panel hero" id="inicio" data-shape="summit" data-side="right">
+      <section class="panel hero" id="inicio" data-shape="summit" data-scene="cordillera" data-side="right">
         <div class="copy">
-          <p class="label">Frontend · Mendoza, Argentina</p>
+          <p class="eyebrow"><i aria-hidden="true"></i>Frontend · Mendoza, Argentina</p>
           <h1>
             <span>Vibecoder que ejecuta.</span>
             <span class="muted">Y que lee el diff.</span>
           </h1>
           <p class="intro">
-            Soy Gabriel. Programo con IA a toda velocidad y sé lo que estoy pidiendo: diseño la
-            arquitectura, reviso cada cambio y lo llevo a producción.
+            <strong>Soy Gabriel. Programo con IA a toda velocidad y sé lo que estoy pidiendo:</strong>
+            diseño la arquitectura, reviso cada cambio y lo llevo a producción.
           </p>
-          <p class="label">«HACELO ANDAR» NO ES MI ÚNICO PROMPT</p>
+          <p class="actions">
+            <a class="button" href="#proyectos">Ver proyectos</a>
+            <button type="button" class="button ghost" id="call-agent">Hablar con Mimo<span aria-hidden="true">→</span></button>
+          </p>
         </div>
-        <a class="scroll-hint" href="#proyectos" aria-label="Ver proyectos">↓</a>
+        <p class="hero-foot">
+          <a class="scroll-hint" href="#proyectos" aria-label="Ver proyectos"><i aria-hidden="true"></i>Seguí bajando</a>
+          <span class="label">«Hacelo andar» no es mi único prompt</span>
+        </p>
       </section>
 
-      <section class="panel" id="proyectos" data-shape={projects[0].shape} data-side="left">
+      <section class="panel" id="proyectos" data-shape={projects[0].shape} data-scene="flujo" data-side="left">
         <div class="copy" data-reveal>
-          <p class="label">Trabajo seleccionado</p>
+          <p class="label"><b>01</b>Trabajo seleccionado</p>
           <ul class="projects">
             {
               projects.map((project, index) => (
@@ -84,7 +106,7 @@ const name = avatar === 'blob' ? 'Mimo' : 'Glifo';
               projects.map((project, index) => (
                 <article data-detail={project.id} hidden={index !== 0}>
                   <p class="story">{project.story}</p>
-                  <p class="tags">{project.tags}</p>
+                  <p class="tags">{project.tags.split(' · ').map((tag) => <span>{tag}</span>)}</p>
                 </article>
               ))
             }
@@ -92,23 +114,24 @@ const name = avatar === 'blob' ? 'Mimo' : 'Glifo';
         </div>
       </section>
 
-      <section class="panel" id="labs" data-shape="flask" data-side="right">
+      <section class="panel" id="labs" data-shape="flask" data-scene="lava" data-side="right">
         <div class="copy" data-reveal>
-          <p class="label">Labs</p>
+          <p class="label"><b>02</b>Labs</p>
           <p class="lead">
-            Acá las ideas vuelan: experimentos, proyectos chicos y vibecodeos, publicados apenas
-            funcionan.
+            Acá las ideas vuelan: <span>experimentos, proyectos chicos y vibecodeos, publicados apenas
+            funcionan.</span>
           </p>
           <div class="lab-detail" aria-live="polite">
+            <p class="lab-empty">Pasá por una tarjeta para ver de qué se trata.</p>
             {
               labs.map((lab) => (
                 <article data-lab-detail={lab.id} hidden>
                   <h3>{lab.name}</h3>
                   <p class="story">{lab.note}</p>
                   <p class="tags">
-                    {lab.tags}
+                    {lab.tags.split(' · ').map((tag) => <span>{tag}</span>)}
                     {lab.href && (
-                      <a href={lab.href} target="_blank" rel="noopener noreferrer">
+                      <a href={lab.href} target={lab.href.startsWith('http') ? '_blank' : undefined} rel="noopener noreferrer">
                         Abrir ↗
                       </a>
                     )}
@@ -120,12 +143,12 @@ const name = avatar === 'blob' ? 'Mimo' : 'Glifo';
         </div>
       </section>
 
-      <section class="panel" id="sobre-mi" data-shape="helix" data-side="left">
+      <section class="panel" id="sobre-mi" data-shape="helix" data-scene="ondas" data-side="left">
         <div class="copy" data-reveal>
-          <p class="label">Sobre mí</p>
+          <p class="label"><b>03</b>Sobre mí</p>
           <p class="lead">
-            Construyo interfaces para productos, equipos y eventos. Trabajo con React y TypeScript;
-            cofundé Aftercode Software.
+            Construyo interfaces para productos, equipos y eventos. <span>Trabajo con React y TypeScript;
+            cofundé Aftercode Software.</span>
           </p>
           <ul class="rows">
             {
@@ -143,15 +166,15 @@ const name = avatar === 'blob' ? 'Mimo' : 'Glifo';
         </div>
       </section>
 
-      <section class="panel compact" id="tecnologias" data-shape="braces" data-side="right">
+      <section class="panel compact" id="tecnologias" data-shape="braces" data-scene="lluvia" data-side="right">
         <div class="copy" data-reveal>
-          <p class="label">Tecnologías</p>
+          <p class="label"><b>04</b>Tecnologías</p>
           <ul class="rows stack">
             {
               stack.map((group) => (
                 <li>
                   <span>{group.area}</span>
-                  <p>{group.items.join(' · ')}</p>
+                  <p class="chips">{group.items.map((item) => <span>{item}</span>)}</p>
                 </li>
               ))
             }
@@ -159,20 +182,25 @@ const name = avatar === 'blob' ? 'Mimo' : 'Glifo';
         </div>
       </section>
 
-      <section class="panel" id="contacto" data-shape="at" data-side="left">
+      <section class="panel" id="contacto" data-shape="at" data-scene="orbita" data-side="left">
         <div class="copy" data-reveal>
-          <p class="label">¿HACEMOS ALGO JUNTOS?</p>
+          <p class="label"><b>05</b>¿Hacemos algo juntos?</p>
           <a class="talk" href="mailto:gprezdiez@gmail.com">Hablemos.<span aria-hidden="true">↗</span></a>
-          <a class="email" href="mailto:gprezdiez@gmail.com">gprezdiez@gmail.com</a>
-          <p class="links">
-            <a href="https://github.com/gabsplat" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+          <p class="actions">
+            <button type="button" class="button" data-copy="gprezdiez@gmail.com">gprezdiez@gmail.com<span aria-hidden="true">Copiar</span></button>
+            <a class="button ghost" href="https://github.com/gabsplat" target="_blank" rel="noopener noreferrer">GitHub<span aria-hidden="true">↗</span></a>
             <a
+              class="button ghost"
               href="https://www.linkedin.com/in/gabriel-p%C3%A9rez-diez/"
               target="_blank"
-              rel="noopener noreferrer">LinkedIn ↗</a
+              rel="noopener noreferrer">LinkedIn<span aria-hidden="true">↗</span></a
             >
           </p>
         </div>
+        <footer>
+          <span>© {new Date().getFullYear()} Gabriel Pérez Diez</span>
+          <span>Hecho en Mendoza con Astro y WebGL</span>
+        </footer>
       </section>
     </main>
 
@@ -195,26 +223,20 @@ const name = avatar === 'blob' ? 'Mimo' : 'Glifo';
       }
     </div>
 
-    <aside class="agent" id="agent" data-state="idle" data-avatar={avatar} aria-label="Asistente de voz">
+    <aside class="agent" id="agent" data-state="idle" aria-label="Asistente de voz">
       <div id="agent-cards" class="agent-cards"></div>
-      <p id="agent-heard" class="agent-heard"></p>
       <p id="agent-say" class="agent-say" aria-live="polite"></p>
+      <p id="agent-heard" class="agent-heard"></p>
       <div id="agent-panel" class="agent-panel" hidden>
         <div id="agent-tips" class="agent-tips"></div>
         <form id="agent-type" class="agent-type">
-          <input type="text" maxlength="200" placeholder="O escribime" aria-label={`Mensaje para ${name}`} autocomplete="off" />
+          <input type="text" maxlength="200" placeholder="O escribime" aria-label="Mensaje para Mimo" autocomplete="off" />
         </form>
       </div>
       <div class="agent-bar">
-        <button type="button" id="agent-orb" class="agent-orb" aria-pressed="false" aria-label={`Hablar con ${name}, el asistente del sitio`}>
+        <button type="button" id="agent-orb" class="agent-orb" aria-pressed="false" aria-label="Hablar con Mimo, el asistente del sitio">
           <span class="aurora" aria-hidden="true"></span>
-          {
-            avatar === 'blob' ? (
-              <span id="agent-blob" class="agent-blob" />
-            ) : (
-              <canvas id="agent-face" class="agent-face" aria-hidden="true" />
-            )
-          }
+          <span id="agent-blob" class="agent-blob"></span>
           <svg class="agent-mic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z M6 11a6 6 0 0 0 12 0 M12 17v4" /></svg>
         </button>
         <span id="agent-hint" class="agent-hint">Tocá y hablame</span>

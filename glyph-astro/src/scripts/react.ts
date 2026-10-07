@@ -37,7 +37,7 @@ export interface Situation {
 }
 
 // Una conversación por visita: el modelo recuerda los últimos intercambios
-const session = crypto.randomUUID();
+const session = crypto.randomUUID?.() ?? `local-${Math.random().toString(36).slice(2)}`;
 const history: { role: 'user' | 'assistant'; content: string }[] = [];
 
 export async function react(text: string, state: Situation): Promise<Reaction> {

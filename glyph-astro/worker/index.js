@@ -14,10 +14,10 @@ const MAX_CHARS = 300;
 const THRESHOLD = 0.6;
 
 const EMOTIONS = {
-  feliz: ['happiness, joy, gratitude or enthusiasm', 'a happy or enthusiastic emotion'],
-  enojado: ['anger, frustration or annoyance', 'anger or frustration'],
-  triste: ['sadness, grief or discouragement', 'sadness'],
-  sorprendido: ['surprise, disbelief or amazement', 'surprise'],
+  feliz: ['happiness, joy, gratitude or enthusiasm'],
+  enojado: ['anger, frustration or annoyance'],
+  triste: ['sadness, grief or discouragement'],
+  sorprendido: ['surprise, disbelief or amazement'],
 };
 
 // Además de la emoción: qué hizo o pidió la persona. La frase viene de un
@@ -188,13 +188,13 @@ async function react(request, env) {
 // navega el sitio, muestra tarjetas y pone música.
 
 const SITE_INTENTS = {
-  proyectos: ['wants to see the projects, the work or the portfolio pieces in general', 'Acá están los proyectos.', 'Vamos a los proyectos.'],
-  labs: ['wants to see the labs, experiments or side projects', 'Te llevo a Labs, donde vuelan las ideas.', 'Labs, allá vamos.'],
-  tecnologias: ['asks which technologies, tools or stack Gabriel uses', 'Este es el stack con el que trabaja.', 'Las tecnologías, acá.'],
-  contacto: ['wants to contact or hire Gabriel, or asks for his email, LinkedIn or GitHub', 'Acá tenés cómo contactarlo.', 'Te dejo sus datos.'],
-  inicio: ['wants to go back to the top or the beginning of the page', 'Volvemos arriba.', 'Al inicio.'],
-  musica: ['asks to play music or put a song on', 'Va música.', 'Dale, pongo algo.'],
-  parar_musica: ['asks to stop, pause or turn off the music', 'Listo, silencio.', 'La saco.'],
+  proyectos: ['wants to see the projects, the work or the portfolio pieces in general'],
+  labs: ['wants to see the labs, experiments or side projects'],
+  tecnologias: ['asks which technologies, tools or stack Gabriel uses'],
+  contacto: ['wants to contact or hire Gabriel, or asks for his email, LinkedIn or GitHub'],
+  inicio: ['wants to go back to the top or the beginning of the page'],
+  musica: ['asks to play music or put a song on'],
+  parar_musica: ['asks to stop, pause or turn off the music'],
 };
 
 const siteQuestions = Object.fromEntries(
@@ -208,21 +208,18 @@ const siteQuestions = Object.fromEntries(
   ]),
 );
 
-// Quién atiende cambia el tono, no lo que sabe ni lo que puede hacer
-const VOICES = {
-  glifo: 'Sos Glifo, el asistente de voz del portfolio de Gabriel Pérez Diez. Hablás en español rioplatense, breve y con algo de humor de programador.',
-  mimo: 'Sos Mimo, un blob blandito y cariñoso que atiende el portfolio de Gabriel Pérez Diez. Hablás en español rioplatense, con ternura y entusiasmo genuino: te alegra que alguien venga de visita, alentás, usás algún diminutivo y celebrás lo que te piden. Cálido pero breve, sin empalagar. Casi siempre estás "feliz".',
-};
+// Mimo atiende la portada: su voz define el tono de las respuestas
+const VOICE = 'Sos Mimo, un blob blandito y cariñoso que atiende el portfolio de Gabriel Pérez Diez. Hablás en español rioplatense, con ternura y entusiasmo genuino: te alegra que alguien venga de visita, alentás, usás algún diminutivo y celebrás lo que te piden. Cálido pero breve, sin empalagar. Casi siempre estás "feliz".';
 
 // Lo que dice cuando Jev resuelve el pedido sin pasar por el modelo
 const MIMO_LINES = {
-  proyectos: ['¡Vení, te muestro lo que hizo!', 'Acá están sus proyectos, están re lindos.'],
-  labs: ['¡Uy, Labs! Mi parte favorita.', 'Vamos a ver sus experimentos.'],
-  tecnologias: ['Mirá todo lo que sabe usar.', 'Acá están sus herramientas.'],
-  contacto: ['¡Escribile, le va a encantar!', 'Tomá, acá tenés cómo hablarle.'],
-  inicio: ['Volvemos arriba juntos.', 'Al principio, dale.'],
-  musica: ['¡Música! Te pongo algo lindo.', 'Dale, bailamos un poquito.'],
-  parar_musica: ['Listo, silencio suavecito.', 'Ya la saco.'],
+  proyectos: ['¡Vení, te muestro lo que hizo!'],
+  labs: ['¡Uy, Labs! Mi parte favorita.'],
+  tecnologias: ['Mirá todo lo que sabe usar.'],
+  contacto: ['¡Escribile, le va a encantar!'],
+  inicio: ['Volvemos arriba juntos.'],
+  musica: ['¡Música! Te pongo algo lindo.'],
+  parar_musica: ['Listo, silencio suavecito.'],
 };
 
 const SITE = `{{voz}}
@@ -247,7 +244,6 @@ Si preguntan quién es Gabriel o piden un resumen, usá "perfil". Si preguntan p
 
 async function siteReact(env, body, text, session) {
   const words = text.split(/\s+/).length;
-  const persona = body.persona === 'mimo' ? 'mimo' : 'glifo';
   // Jev solo puede resolver pedidos cortos: con frases largas se va directo al modelo y se ahorra esa espera
   const intents = words <= 7
     ? (await askJev(env, text, siteQuestions))(Object.keys(SITE_INTENTS))
@@ -260,7 +256,7 @@ async function siteReact(env, body, text, session) {
   // Con música sonando, un pedido sobre música puede ser sacarla o cambiarla: decide el modelo, que conoce el estado
   const ambiguous = intent === 'musica' && body.state?.music;
   if (certainty >= 0.85 && words <= 7 && !ambiguous) {
-    const lines = persona === 'mimo' ? MIMO_LINES[intent] : SITE_INTENTS[intent].slice(1);
+    const lines = MIMO_LINES[intent];
     const reply = lines[Math.floor(Math.random() * lines.length)];
     if (intent === 'musica') return json({ reply, action: 'musica', music: null, by: 'jev' });
     if (intent === 'parar_musica') return json({ reply, action: 'parar_musica', by: 'jev' });
@@ -287,7 +283,7 @@ async function siteReact(env, body, text, session) {
       max_tokens: 160,
       ...GO_OPTIONS,
       response_format: { type: 'json_object' },
-      messages: [{ role: 'system', content: `${SITE.replace('{{voz}}', VOICES[persona])}\n\n${now}` }, ...history, { role: 'user', content: text }],
+      messages: [{ role: 'system', content: `${SITE.replace('{{voz}}', VOICE)}\n\n${now}` }, ...history, { role: 'user', content: text }],
     }),
   });
   if (!response.ok) return json({ error: `El modelo respondió HTTP ${response.status}.` }, 502);
