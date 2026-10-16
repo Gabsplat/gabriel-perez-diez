@@ -264,6 +264,8 @@ document.querySelectorAll<HTMLAnchorElement>('[data-lang]').forEach((link) =>
     try {
       localStorage.setItem('lang', link.dataset.lang!);
     } catch {}
+    // El Worker la lee para servir el idioma elegido sin esperar en el navegador
+    document.cookie = `lang=${link.dataset.lang}; path=/; max-age=31536000; samesite=lax`;
   }),
 );
 

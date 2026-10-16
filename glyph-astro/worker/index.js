@@ -1,4 +1,5 @@
-// Worker de Cloudflare: sirve el sitio estático y expone /api/react, /api/transcribe y /api/geo.
+// Worker de Cloudflare: sirve el sitio estático, decide el idioma de la portada, protege /family
+// con una clave y expone /api/react y /api/transcribe.
 //
 // Jev (Typesafe) hace de portero: clasifica cada frase y resuelve sin modelo lo
 // corto e inequívoco (un saludo, un sí, un no, un guiño). Todo lo demás va a un
@@ -139,7 +140,9 @@ async function react(request, env) {
   if (request.method !== 'POST') return json({ error: 'Método no permitido.' }, 405);
   // Solo responde a la propia página, para que nadie use la clave desde otro sitio
   const origin = request.headers.get('Origin');
-  if (origin && new URL(origin).host !== new URL(request.url).host) return json({ error: 'Origen no permitido.' }, 403);
+  if (!origin || new URL(origin).host !== new URL(request.url).host) return json({ error: 'Origen no permitido.' }, 403);
+  // Y con un límite por IP, así nadie gasta los créditos de las APIs
+  if (tooMany(request.headers.get('CF-Connecting-IP') ?? 'sin-ip')) return json({ error: 'Demasiados pedidos. Probá en un minuto.' }, 429);
   if (!env.TYPESAFE_API_KEY) return json({ error: 'Falta la clave de Typesafe.' }, 503);
 
   let body;
@@ -202,13 +205,66 @@ async function transcribe(request, env) {
   }
 }
 
+// ── Límite de pedidos: 20 por minuto por IP, en la memoria de cada instancia ──
+const hits = new Map();
+function tooMany(ip) {
+  const now = Date.now();
+  const recent = (hits.get(ip) ?? []).filter((t) => now - t < 60_000);
+  recent.push(now);
+  hits.set(ip, recent);
+  if (hits.size > 5000) hits.clear();
+  return recent.length > 20;
+}
+
+// ── Idioma: lo decide el servidor, antes de mandar la página ─────────────────
+// La elección de la persona (cookie) manda; si no hay, el país y después el navegador.
+// Los buscadores nunca se redirigen, así indexan las dos versiones.
+const SPANISH = /^(AR|BO|CL|CO|CR|CU|DO|EC|ES|GQ|GT|HN|MX|NI|PA|PE|PR|PY|SV|UY|VE)$/;
+const BOT = /bot|crawl|spider|slurp|lighthouse|facebookexternalhit|linkedin|twitter|whatsapp|preview/i;
+const cookie = (request, name) => (request.headers.get('Cookie') ?? '').match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`))?.[1] ?? null;
+
+async function home(request, env) {
+  const url = new URL(request.url);
+  const here = url.pathname.startsWith('/en') ? 'en' : 'es';
+  const chosen = cookie(request, 'lang');
+  const bot = BOT.test(request.headers.get('User-Agent') ?? '');
+  const lang = chosen === 'es' || chosen === 'en'
+    ? chosen
+    : SPANISH.test(request.cf?.country ?? '') || /^es\b/i.test(request.headers.get('Accept-Language') ?? '') ? 'es' : 'en';
+  if (!bot && lang !== here) {
+    return new Response(null, { status: 302, headers: { Location: (lang === 'en' ? '/en/' : '/') + url.search, 'Set-Cookie': `lang=${lang}; Path=/; Max-Age=31536000; SameSite=Lax`, Vary: 'Cookie' } });
+  }
+  const page = await env.ASSETS.fetch(request);
+  const out = new Response(page.body, page);
+  out.headers.append('Vary', 'Cookie');
+  if (!chosen && !bot) out.headers.append('Set-Cookie', `lang=${lang}; Path=/; Max-Age=31536000; SameSite=Lax`);
+  return out;
+}
+
+// ── /family: solo con la clave (?clave=… una vez, después queda en una cookie) ──
+async function family(request, env) {
+  const url = new URL(request.url);
+  const key = env.FAMILY_KEY;
+  const given = url.searchParams.get('clave');
+  if (key && given === key) {
+    url.searchParams.delete('clave');
+    return new Response(null, { status: 302, headers: { Location: url.pathname + url.search, 'Set-Cookie': `familia=${key}; Path=/family; Max-Age=31536000; HttpOnly; Secure; SameSite=Lax` } });
+  }
+  if (!key || cookie(request, 'familia') !== key) return new Response('Not found', { status: 404, headers: { 'Content-Type': 'text/plain' } });
+  const out = await env.ASSETS.fetch(request);
+  const res = new Response(out.body, out);
+  res.headers.set('X-Robots-Tag', 'noindex, nofollow');
+  res.headers.set('Cache-Control', 'private, no-store');
+  return res;
+}
+
 export default {
   fetch(request, env) {
     const { pathname } = new URL(request.url);
+    if (pathname === '/' || pathname === '/en' || pathname === '/en/') return home(request, env);
+    if (pathname === '/family' || pathname.startsWith('/family/')) return family(request, env);
     if (pathname === '/api/react') return react(request, env);
     if (pathname === '/api/transcribe') return transcribe(request, env);
-    // País de quien visita, para elegir el idioma en la primera visita
-    if (pathname === '/api/geo') return json({ country: request.cf?.country ?? null });
     return env.ASSETS.fetch(request);
   },
 };

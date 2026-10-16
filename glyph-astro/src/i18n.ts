@@ -16,6 +16,9 @@ export const copy = {
     nav: 'Navegación principal',
     rail: 'Secciones',
     language: 'Idioma',
+    cv: 'CV',
+    cvFile: '/cv/Gabriel_Perez_Diez_CV_ES.pdf',
+    ogAlt: 'La cordillera de los Andes dibujada con letras, con el Sol de Mayo',
     hero: {
       eyebrow: 'Desarrollador frontend · Mendoza, Argentina',
       lines: ['Interfaces con criterio.', 'Hechas a velocidad de IA.'],
@@ -63,6 +66,9 @@ export const copy = {
     nav: 'Main navigation',
     rail: 'Sections',
     language: 'Language',
+    cv: 'Résumé',
+    cvFile: '/cv/Gabriel_Perez_Diez_CV_EN.pdf',
+    ogAlt: 'The Andes drawn in letters, with the Sun of May',
     hero: {
       eyebrow: 'Frontend developer · Mendoza, Argentina',
       lines: ['Interfaces with judgment.', 'Built at AI speed.'],

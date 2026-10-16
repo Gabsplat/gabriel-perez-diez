@@ -1,18 +1,18 @@
 @font-face {
   font-family: Instrument;
-  src: url('/fonts/instrument-serif.ttf') format('truetype');
+  src: url('/fonts/instrument-serif.woff2') format('woff2');
   font-weight: 400;
   font-display: swap;
 }
 @font-face {
   font-family: Manrope;
-  src: url('/fonts/manrope-regular.ttf') format('truetype');
+  src: url('/fonts/manrope-regular.woff2') format('woff2');
   font-weight: 400;
   font-display: swap;
 }
 @font-face {
   font-family: Manrope;
-  src: url('/fonts/manrope-semibold.ttf') format('truetype');
+  src: url('/fonts/manrope-semibold.woff2') format('woff2');
   font-weight: 600;
   font-display: swap;
 }
@@ -22,8 +22,8 @@
   --paper: #efece4;
   /* Tres niveles de texto sobre el fondo oscuro */
   --soft: #b9b6ae;
-  --muted: #8d8b84;
-  --faint: #5d5b56;
+  --muted: #a3a099;
+  --faint: #8a877f;
   --line: #efece417;
   --surface: #131314;
   --glass: #0e0e0fb8;
@@ -215,6 +215,25 @@ nav a[aria-current] {
   gap: 8px;
 }
 
+.cv-link {
+  display: inline-flex;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  font: 11px var(--mono);
+  letter-spacing: 0.06em;
+  color: var(--soft);
+  transition: color 0.25s, border-color 0.25s;
+}
+
+.cv-link:hover {
+  color: var(--paper);
+  border-color: #efece455;
+}
+
 .langs {
   display: flex;
   margin: 0;
@@ -241,11 +260,6 @@ nav a[aria-current] {
 .langs a[aria-current='true'] {
   color: var(--ink);
   background: var(--paper);
-}
-
-/* Primera visita: no se muestra nada hasta saber el idioma (como mucho 1,2 s) */
-.lang-pending body {
-  visibility: hidden;
 }
 
 /* ── Guía lateral: un trazo por sección ── */

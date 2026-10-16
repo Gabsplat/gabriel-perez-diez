@@ -10,7 +10,8 @@
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
-    // Solo /api/* pasa por el Worker; el resto se sirve directo como estático
-    "run_worker_first": ["/api/*"]
+    // Pasan por el Worker: la API, la portada (para el idioma) y /family (para la clave);
+    // el resto se sirve directo como estático
+    "run_worker_first": ["/api/*", "/", "/en", "/en/", "/family", "/family/*"]
   }
 }

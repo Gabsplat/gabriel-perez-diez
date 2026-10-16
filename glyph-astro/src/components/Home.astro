@@ -11,6 +11,7 @@ import '../styles/story.css';
 const { lang } = Astro.props as { lang: Lang };
 const t = copy[lang];
 const storyCopy = STORY_COPY[lang];
+const SITE = 'https://gabsplat.dev';
 const { experience, labs, projects, stack } = content(lang);
 
 // Secciones del recorrido: alimentan el menú y la guía lateral
@@ -29,46 +30,29 @@ const menu = sections.filter((section) => !['inicio', 'tecnologias'].includes(se
     <meta name="theme-color" content="#0a0a0b" />
     <meta name="description" content={t.description} />
     <title>{t.title}</title>
-    {LANGS.map((other) => <link rel="alternate" hreflang={other} href={HOME[other]} />)}
+    <link rel="canonical" href={SITE + HOME[lang]} />
+    {LANGS.map((other) => <link rel="alternate" hreflang={other} href={SITE + HOME[other]} />)}
+    <link rel="alternate" hreflang="x-default" href={SITE + HOME.es} />
+    <!-- Vista previa al compartir el link (LinkedIn, X, WhatsApp) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="gabsplat.dev" />
+    <meta property="og:url" content={SITE + HOME[lang]} />
+    <meta property="og:title" content={t.title} />
+    <meta property="og:description" content={t.description} />
+    <meta property="og:image" content={`${SITE}/og.jpg`} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={t.ogAlt} />
+    <meta property="og:locale" content={lang === 'es' ? 'es_AR' : 'en_US'} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@gabrielpdiez" />
+    <meta name="twitter:image" content={`${SITE}/og.jpg`} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="preload" href="/fonts/instrument-serif.ttf" as="font" type="font/ttf" crossorigin />
+    <link rel="preload" href="/fonts/instrument-serif.woff2" as="font" type="font/woff2" crossorigin />
     <script is:inline>
       document.documentElement.classList.add('js');
-    </script>
-    <!--
-      Idioma: el que la persona eligió queda guardado. En la primera visita
-      decide el país (lo dice el Worker de Cloudflare) y, si no responde, el
-      idioma del navegador. Mientras decide, la página no se muestra.
-    -->
-    <script is:inline>
-      (function () {
-        var here = document.documentElement.lang;
-        var paths = { es: '/', en: '/en/' };
-        var go = function (lang) {
-          if (lang !== here && paths[lang]) location.replace(paths[lang] + location.search + location.hash);
-          else document.documentElement.classList.remove('lang-pending');
-        };
-        var saved = null;
-        try { saved = localStorage.getItem('lang'); } catch (e) {}
-        if (saved) return go(saved);
-        document.documentElement.classList.add('lang-pending');
-        var spanish = /^(AR|BO|CL|CO|CR|CU|DO|EC|ES|GQ|GT|HN|MX|NI|PA|PE|PR|PY|SV|UY|VE)$/;
-        var fromBrowser = function () { return /^es\b/i.test(navigator.language || '') ? 'es' : 'en'; };
-        var decide = function (lang) {
-          try { localStorage.setItem('lang', lang); } catch (e) {}
-          go(lang);
-        };
-        var timer = setTimeout(function () { decide(fromBrowser()); }, 1200);
-        fetch('/api/geo')
-          .then(function (r) { return r.ok ? r.json() : null; })
-          .then(function (geo) {
-            clearTimeout(timer);
-            decide(geo && geo.country ? (spanish.test(geo.country) ? 'es' : 'en') : fromBrowser());
-          })
-          .catch(function () { clearTimeout(timer); decide(fromBrowser()); });
-      })();
     </script>
   </head>
   <body>
@@ -82,6 +66,7 @@ const menu = sections.filter((section) => !['inicio', 'tecnologias'].includes(se
       </nav>
       <div class="corner">
         <p class="clock">Mendoza <time id="clock">--:--</time></p>
+        <a class="cv-link" href={t.cvFile} download>{t.cv}<span aria-hidden="true">↓</span></a>
         <p class="langs" aria-label={t.language}>
           {
             LANGS.map((other) => (
@@ -127,7 +112,7 @@ const menu = sections.filter((section) => !['inicio', 'tecnologias'].includes(se
         <!-- La historia de Gabriel: arranca desde la montaña -->
         <button type="button" class="play-story" id="play-story"><i aria-hidden="true"></i>{JOURNEY_COPY[lang].play}</button>
         <p class="hero-foot">
-          <a class="scroll-hint" href="#proyectos" aria-label={t.hero.work}><i aria-hidden="true"></i>{t.hero.scroll}</a>
+          <a class="scroll-hint" href="#proyectos"><i aria-hidden="true"></i>{t.hero.scroll}</a>
           <span class="label">{t.hero.foot}</span>
         </p>
       </section>
@@ -142,10 +127,10 @@ const menu = sections.filter((section) => !['inicio', 'tecnologias'].includes(se
             {
               projects.map((project, index) => (
                 <article data-detail={project.id} hidden={index !== 0}>
-                  <h3 class="project-name">
+                  <h2 class="project-name">
                     <span class="sr-only">{project.name}</span>
                     <span aria-hidden="true" data-name={project.name}>{project.name}</span>
-                  </h3>
+                  </h2>
                   <p class="meta">{project.tags}{project.year && ` · ${project.year}`}</p>
                   <p class="story">{project.story}</p>
                   {project.href && (
@@ -241,6 +226,7 @@ const menu = sections.filter((section) => !['inicio', 'tecnologias'].includes(se
           <a class="talk" href="mailto:grperezdiez@gmail.com">{t.contact.talk}<span aria-hidden="true">↗</span></a>
           <p class="actions">
             <button type="button" class="button" data-copy="grperezdiez@gmail.com" data-copied={t.contact.copied}>grperezdiez@gmail.com<span aria-hidden="true">{t.contact.copy}</span></button>
+            <a class="button ghost" href={t.cvFile} download>{t.cv}<span aria-hidden="true">↓</span></a>
             <a class="button ghost" href="https://github.com/gabsplat" target="_blank" rel="noopener noreferrer">GitHub<span aria-hidden="true">↗</span></a>
             <a
               class="button ghost"

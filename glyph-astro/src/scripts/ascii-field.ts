@@ -40,7 +40,7 @@ const TEXTS_BY_LANG: Record<string, string[]> = {
 const TEXTS = TEXTS_BY_LANG[document.documentElement.lang] ?? TEXTS_BY_LANG.es;
 const FONT = 'ui-monospace, "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace';
 const GLYPH_W = 36, GLYPH_H = 64;
-// Píxeles de escena por celda, en cada eje
+// Píxeles de escena por celda, en cada eje: 2 en equipos que llegan, 1 en los que no
 const SUB = 2;
 const WAVES = 4;
 
@@ -51,6 +51,8 @@ void main() { gl_Position = vec4(corner, 0.0, 1.0); }`;
 const SCENE = `#version 300 es
 precision highp float;
 uniform vec2 grid;
+// Píxeles de escena por celda (2, o 1 en calidad liviana)
+uniform float sub;
 uniform float aspect;
 uniform float time;
 uniform int from;
@@ -439,7 +441,7 @@ vec3 vinedos(vec2 p) {
 
 // ── Átomo: el logo de React girando sobre una lluvia de código ──────────────
 vec3 atomo(vec2 p) {
-  float column = floor(gl_FragCoord.x / ${SUB}.0);
+  float column = floor(gl_FragCoord.x / sub);
   float seed = hash(vec2(column, 3.0));
   float fall = fract(gl_FragCoord.y / grid.y * (0.7 + seed) + time * (0.08 + seed * 0.18) + seed * 9.0);
   vec3 col = vec3(0.19, 0.47, 0.85) * step(0.55, hash(vec2(column, 11.0))) * pow(1.0 - fall, 3.0) * 0.45 + 0.015;
@@ -687,7 +689,7 @@ void main() {
   if (blend <= 0.0) { result = scene(from, p); which = 0.0; }
   else if (blend >= 1.0) result = scene(to, p);
   else {
-    float ragged = noise(gl_FragCoord.xy * ${(0.09 / SUB).toFixed(3)});
+    float ragged = noise(gl_FragCoord.xy * 0.09 / sub);
     float edge = mix(blend * 1.5 - 0.25 - ragged * 0.5 - uv.y * 0.25 + 0.25, blend * 1.35 - length(p) * 1.1 - ragged * 0.12 + 0.05, iris);
     float turned = smoothstep(0.0, 0.12, edge);
     result = mix(scene(from, p), scene(to, p), turned);
@@ -877,8 +879,16 @@ export function createAsciiField(canvas: HTMLCanvasElement, options: { photoText
   /** De píxeles de pantalla al espacio de la escena: alto 1, origen en el centro. */
   const toScene = (x: number, y: number): [number, number] => [(x / w - 0.5) * (w / h), 0.5 - y / h];
 
+  // Calidad adaptativa: en celulares arranca liviana; en cualquier equipo, si los cuadros
+  // tardan de más baja la resolución de la escena y, si aún no alcanza, dibuja a 30 fps
+  let sub = window.innerWidth < 820 ? 1 : SUB;
+  let halfRate = false;
+  let slow = 0;
+  let lastFrame = 0;
+  let skip = false;
+
   function resize() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    dpr = Math.min(window.devicePixelRatio || 1, window.innerWidth < 820 ? 1.5 : 2);
     w = window.innerWidth;
     h = window.innerHeight;
     canvas.width = Math.round(w * dpr);
@@ -889,7 +899,7 @@ export function createAsciiField(canvas: HTMLCanvasElement, options: { photoText
     rows = Math.ceil(h / cellH);
     gl!.activeTexture(gl!.TEXTURE0);
     gl!.bindTexture(gl!.TEXTURE_2D, target);
-    gl!.texImage2D(gl!.TEXTURE_2D, 0, gl!.RGBA8, cols * SUB, rows * SUB, 0, gl!.RGBA, gl!.UNSIGNED_BYTE, null);
+    gl!.texImage2D(gl!.TEXTURE_2D, 0, gl!.RGBA8, cols * sub, rows * sub, 0, gl!.RGBA, gl!.UNSIGNED_BYTE, null);
     dirty = true;
   }
 
@@ -900,6 +910,20 @@ export function createAsciiField(canvas: HTMLCanvasElement, options: { photoText
     requestAnimationFrame(frame);
     // Quieto: solo se vuelve a dibujar cuando algo cambia
     if (!visible || (still && !dirty && !mixing && clock === null)) return;
+    // Medir: un promedio del tiempo entre cuadros decide si hay que bajar la calidad
+    if (clock === null && lastFrame) {
+      const dt = now - lastFrame;
+      if (dt < 250) slow = slow * 0.95 + (dt > (halfRate ? 40 : 24) ? 1 : 0) * 0.05;
+      if (slow > 0.6) {
+        slow = 0;
+        if (sub > 1) {
+          sub = 1;
+          resize();
+        } else halfRate = true;
+      }
+    }
+    lastFrame = now;
+    if (halfRate && clock === null && (skip = !skip)) return;
     dirty = false;
     const time = clock ?? (still ? 40 : now / 1000);
 
@@ -914,11 +938,12 @@ export function createAsciiField(canvas: HTMLCanvasElement, options: { photoText
 
     // 1. La escena, dos por dos píxeles por celda
     gl!.bindFramebuffer(gl!.FRAMEBUFFER, buffer);
-    gl!.viewport(0, 0, cols * SUB, rows * SUB);
+    gl!.viewport(0, 0, cols * sub, rows * sub);
     gl!.disable(gl!.BLEND);
     gl!.useProgram(scenePass!.made);
     const s = scenePass!.uniforms;
-    gl!.uniform2f(s.grid, cols * SUB, rows * SUB);
+    gl!.uniform2f(s.grid, cols * sub, rows * sub);
+    gl!.uniform1f(s.sub, sub);
     gl!.uniform1f(s.aspect, w / h);
     gl!.uniform1f(s.time, time);
     gl!.uniform1i(s.from, view.from);
