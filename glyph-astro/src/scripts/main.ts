@@ -1,36 +1,47 @@
 import { animate, stagger, splitText } from 'animejs';
 import { createAsciiField, type Scene } from './ascii-field';
-import { createGlyphField } from './glyph-field';
-import { createAgent } from './agent';
-import { createOrbit } from './orbit';
-import { SHAPES, text as textShape } from './shapes';
+import { setupLabs } from './labs';
+import { createStory } from './story';
+import { photoText } from '../data/family';
+import { SHAPES } from './shapes';
 
 type Side = 'left' | 'right' | 'center';
 
 const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const canvas = document.querySelector<HTMLCanvasElement>('#glyphs')!;
-// La portada tiene muchos elementos chicos: hace falta más letras que el valor por defecto
-const field = createGlyphField(canvas, { count: [1200, 2000] });
-// Detrás de las letras sueltas, la escena ASCII de cada sección
-const backdrop = createAsciiField(document.querySelector<HTMLCanvasElement>('#scene')!);
-backdrop?.follow(field.center);
+// Cada sección tiene su escena de letras de fondo; lo que se elige en la sección
+// (un proyecto, un experimento) cambia esa misma escena, sin nada encima
+const lang = document.documentElement.lang === 'en' ? 'en' : 'es';
+// La foto de la familia se escribe con los nombres de todos
+const backdrop = createAsciiField(document.querySelector<HTMLCanvasElement>('#scene')!, { photoText: photoText(lang) });
+// El centro de las escenas que se arman alrededor de un punto (lava, átomo, planeta):
+// del lado contrario al texto, o arriba del texto en pantallas angostas
+backdrop?.follow(() => {
+  const side = active?.dataset.side;
+  if (innerWidth < 820) return { x: innerWidth / 2, y: active ? Math.max(innerHeight * 0.22, active.getBoundingClientRect().top + innerHeight * 0.29) : innerHeight / 2 };
+  return { x: innerWidth * (side === 'left' ? 0.27 : side === 'right' ? 0.73 : 0.5), y: innerHeight * 0.52 };
+});
 const panels = [...document.querySelectorAll<HTMLElement>('[data-shape]')];
 
 let active: HTMLElement | null = null;
 
-/** Cambia la forma de letras y tiñe el fondo con su color. */
-function morph(shape: string, options?: Parameters<typeof field.morph>[2]) {
-  field.morph(shape, undefined, options);
+/** Tiñe el fondo con el color de una forma del catálogo. */
+function tint(shape: string) {
   const accent = SHAPES[shape]?.accent;
   if (accent) backdrop?.setAccent(accent);
 }
 
-// ── Labs: tarjetas en órbita alrededor de la forma ─────────────────────────
+// ── Labs: una hoja de contactos; el experimento señalado cambia la lava ────
 const labsPanel = document.querySelector<HTMLElement>('#labs')!;
-const labDetails = [...labsPanel.querySelectorAll<HTMLElement>('[data-lab-detail]')];
-const orbitRoot = document.querySelector<HTMLElement>('#orbit')!;
 const labsShape = labsPanel.dataset.shape!;
-let shownLab: string | null = null;
+// Variante de la lava de cada experimento, en el orden de data/site.ts
+const LAB_VARIANT: Record<string, number> = { personaje: 1, microondas: 2, maquinas: 3, carbono: 4 };
+let labVariant = 0;
+setupLabs(labsPanel.querySelector<HTMLElement>('[data-labs]')!, (lab) => {
+  labVariant = lab ? LAB_VARIANT[lab.id] ?? 0 : 0;
+  if (active !== labsPanel) return;
+  tint(lab?.shape ?? labsShape);
+  backdrop?.setVariant(labVariant);
+});
 
 /** Muestra uno de varios bloques de detalle y hace entrar su contenido. */
 function swap(details: HTMLElement[], match: (detail: HTMLElement) => boolean) {
@@ -49,42 +60,12 @@ function swap(details: HTMLElement[], match: (detail: HTMLElement) => boolean) {
   }
 }
 
-const orbit = createOrbit(orbitRoot, {
-  center: field.center,
-  onSelect(id) {
-    if (id === shownLab) return;
-    shownLab = id;
-    // Sin tarjeta señalada vuelve la forma propia de la sección
-    const shape = id ? orbitRoot.querySelector<HTMLElement>(`[data-lab="${id}"]`)!.dataset.labShape! : labsShape;
-    if (active === labsPanel) morph(shape);
-    swap(labDetails, (detail) => detail.dataset.labDetail === id);
-  },
-});
-
-// ── Portada: una secuencia en bucle ────────────────────────────────────────
-// La laptop escribe el código; cuando llega a `ship()`, las letras despegan
-// como un cohete y vuelven a armar la escena.
+// ── Portada: la cordillera es la protagonista ───────────────────────────
+// Las letras sueltas se dispersan y se apagan: en la portada no hay forma, y
+// vuelven a armarse al bajar a la sección siguiente
 const hero = document.querySelector<HTMLElement>('#inicio')!;
-const ACTS: { shape: string; flight: 'vortex' | 'rise' | 'burst'; hold: number }[] = [
-  { shape: 'summit', flight: 'vortex', hold: 19500 },
-  { shape: 'rocket', flight: 'rise', hold: 5200 },
-];
-let act = 0;
-let curtain = 0;
-
-function play(next: number) {
-  clearTimeout(curtain);
-  act = next % ACTS.length;
-  const { shape, flight, hold } = ACTS[act];
-  morph(shape, { flight });
-  if (act) {
-    // Despegue: una onda sale desde donde estaba la laptop
-    const { x, y } = field.center();
-    field.pulse(x, y);
-    backdrop?.pulse(x, y);
-  }
-  if (!still) curtain = window.setTimeout(() => active === hero && play(act + 1), hold);
-}
+// Celeste de la bandera, para el puntero y las ondas sobre los Andes
+const CELESTE: [number, number, number] = [116, 172, 223];
 
 // ── La forma y la escena siguen a la sección que cruza el centro ───────────
 const marks = [...document.querySelectorAll<HTMLElement>('[data-nav], [data-rail]')];
@@ -118,15 +99,9 @@ function follow() {
   active = panel;
   const side = (panel.dataset.side as Side) ?? 'center';
   const shape = panel.dataset.shape!;
-  clearTimeout(curtain);
-  if (panel === hero) {
-    field.morph(shape, undefined, { side });
-    play(0);
-  } else {
-    morph(shape, { side });
-  }
-  backdrop?.show(panel.dataset.scene as Scene, side, SHAPES[shape]?.accent);
-  orbit.setActive(panel === labsPanel);
+  // La ciudad y la lava muestran lo que está elegido en su sección; el resto, la variante común
+  backdrop?.setVariant(panel === projectsPanel ? tuned + 1 : panel === labsPanel ? labVariant : 0);
+  backdrop?.show(panel.dataset.scene as Scene, side, panel === hero ? CELESTE : SHAPES[shape]?.accent);
   mark(panel.id);
 }
 
@@ -146,36 +121,91 @@ window.addEventListener('resize', () => {
   if (active) mark(active.id);
 });
 
-// En pantallas angostas la forma viaja con su sección, en el espacio reservado
-// arriba del texto, para que las letras nunca queden detrás de lo que se lee
-field.setAnchor(() => (active ? active.getBoundingClientRect().top + window.innerHeight * 0.29 : null));
 
-// ── Proyectos: una sola pantalla, la forma cambia con el proyecto elegido ──
+// ── Proyectos: un dial con una estación por proyecto ──────────────────────
+// La forma, el color y el texto cambian con la estación; arrastrando la aguja
+// se pasa por todas, como al sintonizar una radio.
 const projectsPanel = document.querySelector<HTMLElement>('#proyectos')!;
-const projectButtons = [...projectsPanel.querySelectorAll<HTMLButtonElement>('[data-project]')];
+const stations = [...projectsPanel.querySelectorAll<HTMLButtonElement>('.station')];
 const details = [...projectsPanel.querySelectorAll<HTMLElement>('[data-detail]')];
+const dial = projectsPanel.querySelector<HTMLElement>('.dial')!;
+const projectNow = projectsPanel.querySelector<HTMLElement>('#project-now')!;
+const stationAt = (index: number) => (stations.length > 1 ? index / (stations.length - 1) : 0.5);
+let tuned = 0;
 
-function showProject(button: HTMLButtonElement) {
-  if (button.getAttribute('aria-pressed') === 'true') return;
-  for (const other of projectButtons) other.setAttribute('aria-pressed', String(other === button));
-  const shape = button.dataset.projectShape!;
+// Al cambiar de proyecto el nombre entra letra por letra, sin reemplazar ninguna
+function scramble(target: HTMLElement) {
+  const name = target.dataset.name!;
+  target.replaceChildren(...[...name].map((char) => Object.assign(document.createElement('span'), { textContent: char, style: 'display:inline-block;white-space:pre' })));
+  if (still) return;
+  animate(target.children, { opacity: [0, 1], y: ['0.4em', '0em'], duration: 700, delay: stagger(28), ease: 'outBack(1.7)' });
+}
+
+/** Elige un proyecto. `snap` lleva la aguja a su estación (al arrastrar, la aguja va con el dedo). */
+function showProject(index: number, snap = true) {
+  index = Math.max(0, Math.min(stations.length - 1, index));
+  if (snap) dial.style.setProperty('--needle', String(stationAt(index)));
+  const station = stations[index];
+  if (station.getAttribute('aria-pressed') === 'true') return;
+  tuned = index;
+  for (const other of stations) other.setAttribute('aria-pressed', String(other === station));
+  dial.setAttribute('aria-valuenow', String(index + 1));
+  dial.setAttribute('aria-valuetext', station.dataset.name!);
+  projectNow.textContent = String(index + 1).padStart(2, '0');
+  const shape = station.dataset.projectShape!;
   projectsPanel.dataset.shape = shape;
-  if (active === projectsPanel) morph(shape);
-  swap(details, (detail) => detail.dataset.detail === button.dataset.project);
+  const accent = SHAPES[shape]?.accent;
+  if (accent) projectsPanel.style.setProperty('--tint', `rgb(${accent.join(' ')})`);
+  if (active === projectsPanel) {
+    tint(shape);
+    backdrop?.setVariant(index + 1);
+  }
+  swap(details, (detail) => detail.dataset.detail === station.dataset.project);
+  scramble(details[index].querySelector<HTMLElement>('[data-name]')!);
 }
 
-for (const button of projectButtons) {
-  button.addEventListener('pointerenter', (event) => {
-    if (event.pointerType === 'mouse') showProject(button);
-  });
-  button.addEventListener('focus', () => showProject(button));
-  button.addEventListener('click', () => showProject(button));
+/** Lleva la aguja bajo el puntero y sintoniza la estación más cercana. */
+function tune(clientX: number) {
+  const box = dial.getBoundingClientRect();
+  const pad = 14;
+  const at = Math.max(0, Math.min(1, (clientX - box.left - pad) / (box.width - pad * 2)));
+  dial.style.setProperty('--needle', String(at));
+  showProject(stations.length > 1 ? Math.round(at * (stations.length - 1)) : 0, false);
 }
+
+let dragging = false;
+dial.addEventListener('pointerdown', (event) => {
+  dragging = true;
+  dial.setPointerCapture(event.pointerId);
+  dial.classList.add('dragging');
+  tune(event.clientX);
+});
+dial.addEventListener('pointermove', (event) => dragging && tune(event.clientX));
+for (const type of ['pointerup', 'pointercancel']) {
+  dial.addEventListener(type, () => {
+    if (!dragging) return;
+    dragging = false;
+    dial.classList.remove('dragging');
+    // Al soltar, la aguja cae en la estación elegida
+    dial.style.setProperty('--needle', String(stationAt(tuned)));
+  });
+}
+dial.addEventListener('keydown', (event) => {
+  const moves: Record<string, number> = { ArrowRight: tuned + 1, ArrowUp: tuned + 1, ArrowLeft: tuned - 1, ArrowDown: tuned - 1, Home: 0, End: stations.length - 1 };
+  if (!(event.key in moves)) return;
+  event.preventDefault();
+  showProject(moves[event.key]);
+});
+// Las flechas dan la vuelta: después del último viene el primero
+for (const button of projectsPanel.querySelectorAll<HTMLButtonElement>('.tune')) {
+  button.addEventListener('click', () => showProject((tuned + Number(button.dataset.step) + stations.length) % stations.length));
+}
+// El color del primer proyecto, antes de tocar nada
+projectsPanel.style.setProperty('--tint', `rgb(${(SHAPES[stations[0].dataset.projectShape!]?.accent ?? [255, 122, 61]).join(' ')})`);
 
 // Clic en cualquier zona libre: onda expansiva en las letras y en el fondo
 window.addEventListener('pointerdown', (event) => {
-  if ((event.target as HTMLElement).closest('a, button, input, summary, .agent')) return;
-  field.pulse(event.clientX, event.clientY);
+  if ((event.target as HTMLElement).closest('a, button, input, summary, .dial')) return;
   backdrop?.pulse(event.clientX, event.clientY);
 });
 
@@ -221,32 +251,83 @@ document.addEventListener('click', (event) => {
   if (!copy) return;
   navigator.clipboard?.writeText(copy.dataset.copy!);
   const note = copy.querySelector('span')!;
-  note.textContent = 'Copiado';
-  setTimeout(() => (note.textContent = 'Copiar'), 1800);
+  const original = note.textContent;
+  note.textContent = copy.dataset.copied ?? '✓';
+  setTimeout(() => (note.textContent = original), 1800);
 });
 
-createAgent({
-  write(text) {
-    clearTimeout(curtain);
-    field.morph(`word:${text}`, { build: textShape(text.toUpperCase()), float: 0.012, accent: [255, 122, 61] }, { flight: 'vortex' });
-  },
-  showProject: (id) => {
-    const button = projectButtons.find((item) => item.dataset.project === id);
-    if (button) showProject(button);
-  },
-  section: () => active?.id ?? 'inicio',
-});
+// El selector de idioma recuerda la elección
+document.querySelectorAll<HTMLAnchorElement>('[data-lang]').forEach((link) =>
+  link.addEventListener('click', () => {
+    try {
+      localStorage.setItem('lang', link.dataset.lang!);
+    } catch {}
+  }),
+);
 
-// El botón de la portada abre a Mimo
-document.querySelector('#call-agent')!.addEventListener('click', () => {
-  const orb = document.querySelector<HTMLButtonElement>('#agent-orb')!;
-  if (orb.getAttribute('aria-pressed') !== 'true') orb.click();
+// ── La historia de Gabriel: desde la montaña de la portada ──────────────
+const storyRoot = document.querySelector<HTMLElement>('#story')!;
+const replay = document.querySelector<HTMLButtonElement>('#story-replay')!;
+const storyEnd = document.querySelector<HTMLElement>('#story-end')!;
+
+/** El final: el botón para volver aparece con un rebote. */
+function showEnd() {
+  storyEnd.hidden = false;
+  if (still) return;
+  animate(storyEnd.children, {
+    opacity: [0, 1],
+    scale: [{ from: 0.6, to: 1.06, duration: 380, ease: 'outQuad' }, { to: 1, duration: 520, ease: 'outElastic(1, .5)' }],
+    delay: stagger(140),
+  });
+}
+let story: ReturnType<typeof createStory> | null = null;
+let video: Promise<void> | null = null;
+
+// El video de la Live Photo se baja recién al apretar play
+function loadVideo(field: NonNullable<typeof backdrop>) {
+  video ??= (() => {
+    const element = Object.assign(document.createElement('video'), { src: '/family/vivo.mp4', muted: true, loop: true, playsInline: true, preload: 'auto' });
+    return element.play().catch(() => undefined).then(() => field.setPhoto(element));
+  })();
+  return video;
+}
+
+function openStory() {
+  if (!backdrop) return;
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  document.documentElement.classList.add('story-on');
+  storyRoot.hidden = false;
+  storyEnd.hidden = true;
+  backdrop.focus(true);
+  story ??= createStory({ field: backdrop, stage: document.querySelector<HTMLElement>('#story-stage')!, lang, script: 'me', onEnd: showEnd });
+  const current = story;
+  loadVideo(backdrop).then(() => current.play());
+}
+
+function closeStory() {
+  if (storyRoot.hidden || !backdrop) return;
+  story?.stop();
+  storyRoot.hidden = true;
+  storyEnd.hidden = true;
+  document.documentElement.classList.remove('story-on');
+  backdrop.focus(false);
+  // La foto se cierra de vuelta en la montaña
+  backdrop.show('andes', 'right', CELESTE, { iris: true, duration: 1200 });
+}
+
+document.querySelector('#play-story')!.addEventListener('click', openStory);
+document.querySelector('#story-close')!.addEventListener('click', closeStory);
+replay.addEventListener('click', () => {
+  storyEnd.hidden = true;
+  story?.play();
 });
+document.querySelector('#story-home')!.addEventListener('click', closeStory);
+window.addEventListener('keydown', (event) => event.key === 'Escape' && closeStory());
 
 intro();
 reveals();
 
-// Para ajustar una escena del fondo: /?escena=cordillera la muestra sola
+// Para ajustar una escena del fondo: /?escena=andes la muestra sola
 const preview = new URLSearchParams(location.search).get('escena') as Scene | null;
 if (preview && backdrop) {
   document.body.classList.add('scene-only');

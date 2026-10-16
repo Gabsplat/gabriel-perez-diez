@@ -1,0 +1,216 @@
+---
+// Una foto hecha de letras. La foto se lee en el navegador: no se sube a ningún lado.
+import '../styles/global.css';
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#0a0a0b" />
+    <meta name="robots" content="noindex" />
+    <title>Foto en letras · Gabriel Pérez Diez</title>
+    <link rel="icon" href="data:," />
+  </head>
+  <body class="photo-page">
+    <canvas id="photo" aria-label="La foto, dibujada con letras"></canvas>
+
+    <label class="drop" id="drop">
+      <input type="file" accept="image/*" id="pick" hidden />
+      <strong>Soltá una foto acá</strong>
+      <span>o tocá para elegirla. También podés pegarla. No sale de tu navegador.</span>
+    </label>
+
+    <a class="back" href="/">← Volver</a>
+
+    <form class="photo-controls" id="controls" hidden>
+      <input type="text" id="phrase" maxlength="400" aria-label="Texto con el que se dibuja" value="esto no es una foto. cada píxel es una letra." />
+      <label class="size">
+        <span>Letra</span>
+        <input type="range" id="size" min="4" max="14" step="1" value="7" />
+      </label>
+      <button type="button" id="mono" aria-pressed="false">Color</button>
+      <button type="button" id="another">Otra foto</button>
+      <button type="button" id="save">Guardar PNG</button>
+    </form>
+
+    <style>
+      .photo-page {
+        overflow: hidden;
+        height: 100dvh;
+      }
+
+      #photo {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      .drop {
+        position: fixed;
+        inset: 50% auto auto 50%;
+        display: grid;
+        gap: 8px;
+        width: min(440px, 86vw);
+        padding: 44px 28px;
+        border: 1px dashed #efece440;
+        border-radius: 18px;
+        text-align: center;
+        translate: -50% -50%;
+        cursor: pointer;
+        transition: border-color 0.25s, background 0.25s;
+      }
+
+      .drop strong {
+        font: 400 34px / 1.1 var(--serif);
+      }
+
+      .drop span {
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--muted);
+      }
+
+      .drop:hover,
+      .dragging .drop {
+        border-color: var(--accent);
+        background: #ff7a3d0d;
+      }
+
+      .loaded .drop {
+        display: none;
+      }
+
+      .back {
+        position: fixed;
+        top: 20px;
+        left: 22px;
+        font: 11px var(--mono);
+        letter-spacing: 0.06em;
+        color: var(--muted);
+      }
+
+      .photo-controls {
+        position: fixed;
+        bottom: 18px;
+        left: 50%;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        width: max-content;
+        max-width: calc(100vw - 24px);
+        padding: 8px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--glass);
+        backdrop-filter: blur(14px);
+        translate: -50% 0;
+      }
+
+      .photo-controls[hidden] {
+        display: none;
+      }
+
+      .photo-controls input[type='text'] {
+        width: min(320px, 70vw);
+        height: 34px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: none;
+        font: 12px var(--mono);
+        color: var(--paper);
+      }
+
+      .photo-controls button {
+        height: 34px;
+        padding: 0 14px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: none;
+        font: 12px var(--sans);
+        color: var(--soft);
+        cursor: pointer;
+      }
+
+      .photo-controls button:hover {
+        color: var(--paper);
+        border-color: #efece455;
+      }
+
+      .size {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 6px;
+        font: 11px var(--mono);
+        color: var(--muted);
+      }
+
+      .size input {
+        width: 110px;
+        accent-color: var(--accent);
+      }
+    </style>
+
+    <script>
+      import { createPhotoField } from '../scripts/foto';
+
+      const canvas = document.querySelector<HTMLCanvasElement>('#photo')!;
+      const field = createPhotoField(canvas);
+      const pick = document.querySelector<HTMLInputElement>('#pick')!;
+      const controls = document.querySelector<HTMLFormElement>('#controls')!;
+      const phrase = document.querySelector<HTMLInputElement>('#phrase')!;
+      const monoButton = document.querySelector<HTMLButtonElement>('#mono')!;
+
+      if (!field) document.querySelector('#drop strong')!.textContent = 'Tu navegador no tiene WebGL2';
+
+      async function load(file: File | undefined | null) {
+        if (!field || !file || !file.type.startsWith('image/')) return;
+        const image = await createImageBitmap(file, { imageOrientation: 'from-image' });
+        field.setPhoto(image);
+        document.body.classList.add('loaded');
+        controls.hidden = false;
+      }
+
+      field?.setText(phrase.value);
+      pick.addEventListener('change', () => load(pick.files?.[0]));
+      document.querySelector('#another')!.addEventListener('click', () => pick.click());
+      phrase.addEventListener('input', () => field?.setText(phrase.value));
+      controls.addEventListener('submit', (event) => event.preventDefault());
+      document.querySelector<HTMLInputElement>('#size')!.addEventListener('input', (event) => field?.setCell(Number((event.target as HTMLInputElement).value)));
+      monoButton.addEventListener('click', () => {
+        const on = monoButton.getAttribute('aria-pressed') !== 'true';
+        monoButton.setAttribute('aria-pressed', String(on));
+        monoButton.textContent = on ? 'Monocromo' : 'Color';
+        field?.setMono(on);
+      });
+      document.querySelector('#save')!.addEventListener('click', () => {
+        const link = document.createElement('a');
+        link.download = 'foto-en-letras.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+
+      // Arrastrar y soltar en cualquier parte, o pegar desde el portapapeles
+      window.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        document.body.classList.add('dragging');
+      });
+      window.addEventListener('dragleave', () => document.body.classList.remove('dragging'));
+      window.addEventListener('drop', (event) => {
+        event.preventDefault();
+        document.body.classList.remove('dragging');
+        load(event.dataTransfer?.files[0]);
+      });
+      window.addEventListener('paste', (event) => {
+        const item = [...(event.clipboardData?.items ?? [])].find((entry) => entry.type.startsWith('image/'));
+        load(item?.getAsFile());
+      });
+    </script>
+  </body>
+</html>

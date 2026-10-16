@@ -1,0 +1,487 @@
+/* ── Historia de la familia: botón en la portada y escenario a pantalla completa ── */
+
+/* El botón vive sobre la montaña, del lado de la escena */
+.play-story {
+  position: absolute;
+  top: 50%;
+  right: calc(var(--gutter) + 6vw);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 22px 10px 10px;
+  border: 1px solid #efece433;
+  border-radius: 999px;
+  background: var(--glass);
+  backdrop-filter: blur(14px);
+  font: 500 14px var(--sans);
+  color: var(--paper);
+  cursor: pointer;
+  translate: 0 -50%;
+  transition: scale 0.5s cubic-bezier(0.34, 1.8, 0.5, 1), border-color 0.3s;
+}
+
+.play-story:hover {
+  scale: 1.06;
+  border-color: #74acdf;
+}
+
+.play-story:active {
+  scale: 0.96;
+}
+
+/* El círculo del play late suave, para invitar */
+.play-story i {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #74acdf;
+  box-shadow: 0 0 0 0 #74acdf88;
+  animation: invite 2.4s ease-out infinite;
+}
+
+.play-story i::before {
+  content: '';
+  margin-left: 4px;
+  border-style: solid;
+  border-width: 9px 0 9px 15px;
+  border-color: transparent transparent transparent var(--ink);
+}
+
+@keyframes invite {
+  to {
+    box-shadow: 0 0 0 14px transparent;
+  }
+}
+
+/* Mientras corre la historia, la página se corre y queda solo el fondo */
+.story-on {
+  overflow: hidden;
+}
+
+.story-on header,
+.story-on main,
+.story-on .rail {
+  opacity: 0;
+  pointer-events: none;
+}
+
+header,
+main,
+.rail {
+  transition: opacity 0.6s ease;
+}
+
+.family-story {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.family-story[hidden] {
+  display: none;
+}
+
+.story-stage {
+  position: absolute;
+  inset: 0;
+}
+
+/* Frases de apertura y cierre, al centro de abajo */
+.story-line {
+  position: absolute;
+  right: 0;
+  bottom: 14vh;
+  left: 0;
+  margin: 0;
+  padding: 0 24px;
+  font: 400 clamp(40px, 6vw, 96px) / 1.02 var(--serif);
+  letter-spacing: -0.015em;
+  text-align: center;
+  text-shadow: 0 4px 40px #0a0a0b, 0 1px 10px #0a0a0b;
+}
+
+.story-line.big {
+  bottom: 10vh;
+  font-size: clamp(64px, 11vw, 190px);
+}
+
+.family-story .word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.family-story .char {
+  display: inline-block;
+  transform-origin: 50% 90%;
+}
+
+/* La tarjeta de cada persona: grande, al costado de la cara */
+.story-card {
+  position: absolute;
+  top: 50%;
+  left: 54vw;
+  display: flex;
+  gap: 6vw;
+  max-width: 42vw;
+  opacity: 0;
+  translate: 0 -50%;
+}
+
+/* Un velo oscuro detrás, para que se lea sobre las letras */
+.story-card::before {
+  content: '';
+  position: absolute;
+  inset: -40% -30% -40% -20%;
+  z-index: -1;
+  background: radial-gradient(closest-side, #0a0a0bd9, #0a0a0b99 55%, transparent);
+}
+
+.story-card .entry {
+  display: grid;
+  gap: 10px;
+}
+
+.story-card .role {
+  font: 500 clamp(12px, 1vw, 15px) var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #74acdf;
+}
+
+.story-card .name {
+  font: 400 clamp(72px, 9.5vw, 168px) / 0.9 var(--serif);
+  letter-spacing: -0.03em;
+  color: #fff;
+  text-shadow: 0 6px 40px #0a0a0b;
+}
+
+.story-card .quip {
+  max-width: 24ch;
+  font: 500 clamp(19px, 1.7vw, 27px) / 1.3 var(--sans);
+  color: var(--paper);
+  text-wrap: balance;
+}
+
+/* Gabriel: «(yo)» casi tan grande como el nombre */
+.story-card.me .quip {
+  font: 400 clamp(56px, 7vw, 120px) / 1 var(--serif);
+  color: #74acdf;
+}
+
+/* Los papás: dos columnas, una por cada uno */
+.story-card.pair {
+  max-width: 44vw;
+}
+
+.story-card.pair .name {
+  font-size: clamp(54px, 6vw, 108px);
+}
+
+.story-card.pair .quip {
+  font-size: clamp(16px, 1.3vw, 21px);
+}
+
+.story-heart {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: clamp(54px, 6vw, 96px);
+  margin: calc(clamp(54px, 6vw, 96px) / -2) 0 0 calc(clamp(54px, 6vw, 96px) / -2);
+  opacity: 0;
+  filter: drop-shadow(0 6px 24px #ff4d6d88);
+}
+
+.story-heart svg {
+  display: block;
+  fill: #ff4d6d;
+}
+
+/* Volver y ver de nuevo */
+.story-actions {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.story-actions button {
+  padding: 9px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  font: 13px var(--sans);
+  color: var(--soft);
+  cursor: pointer;
+}
+
+.story-actions button:hover {
+  color: var(--paper);
+  border-color: #efece455;
+}
+
+@media (max-width: 819px) {
+  .play-story {
+    top: 24svh;
+    right: 50%;
+    translate: 50% 0;
+  }
+
+  /* En el celular la cara va arriba y la tarjeta abajo, centrada */
+  .story-card {
+    top: auto;
+    right: 6vw;
+    bottom: 10svh;
+    left: 6vw;
+    justify-content: center;
+    max-width: none;
+    text-align: center;
+    translate: none;
+  }
+
+  .story-card .entry {
+    justify-items: center;
+  }
+
+  .story-card .name {
+    font-size: clamp(60px, 18vw, 96px);
+  }
+
+  .story-card.pair {
+    max-width: none;
+    gap: 8vw;
+  }
+
+  .story-card.pair .name {
+    font-size: clamp(40px, 11vw, 64px);
+  }
+
+  .story-card.me .quip {
+    font-size: clamp(44px, 13vw, 72px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .play-story i {
+    animation: none;
+  }
+}
+
+/* ── Llamada: una línea celeste del halo a la tarjeta ── */
+.story-link {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.story-link path {
+  fill: none;
+  stroke: #74acdf;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  filter: drop-shadow(0 0 6px #74acdf88);
+}
+
+/* Contador de la parada, arriba de la tarjeta */
+.story-card .tally {
+  position: absolute;
+  bottom: calc(100% + 14px);
+  left: 0;
+  font: 11px var(--mono);
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+/* Las letras recién llegadas son celestes y pasan a su color */
+.story-card .char {
+  transition: color 0.9s ease;
+}
+
+.story-card .char.fresh {
+  color: #74acdf;
+}
+
+/* ── El héroe de Fausti ── */
+.story-hero {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: clamp(56px, 5.5vw, 92px);
+  margin: -60px 0 0 -40px;
+  opacity: 0;
+  filter: drop-shadow(0 10px 24px #0a0a0bcc);
+}
+
+.story-hero svg {
+  display: block;
+  overflow: visible;
+}
+
+.story-hero .flame {
+  transform-origin: 50% 80%;
+  animation: thrust 0.16s ease-in-out infinite alternate;
+}
+
+.story-hero .flame + .flame {
+  animation-delay: 0.08s;
+}
+
+.story-hero .reactor,
+.story-hero .repulsor {
+  filter: drop-shadow(0 0 4px #bff6ff);
+}
+
+@keyframes thrust {
+  from {
+    transform: scaleY(0.78);
+  }
+  to {
+    transform: scaleY(1.12);
+  }
+}
+
+@media (max-width: 819px) {
+  .story-card .tally {
+    left: 50%;
+    translate: -50% 0;
+  }
+}
+
+/* ── La polaroid del Dibu Martínez ── */
+.story-dibu {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: clamp(104px, 9vw, 168px);
+  margin: 0;
+  padding: 7px 7px 0;
+  background: #f4f1ea;
+  border-radius: 3px;
+  box-shadow: 0 18px 40px #0a0a0bcc;
+  opacity: 0;
+  translate: -9999px 0;
+  transform-origin: 50% 0;
+}
+
+.story-dibu img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.story-dibu figcaption {
+  display: grid;
+  padding: 6px 2px 7px;
+  font: 400 clamp(15px, 1.25vw, 21px) / 1 var(--serif);
+  color: #14301f;
+  text-align: center;
+}
+
+.story-dibu small {
+  margin-top: 3px;
+  font: 8px var(--mono);
+  letter-spacing: 0.04em;
+  color: #6d6a63;
+}
+
+@media (max-width: 819px) {
+  .story-dibu {
+    width: 92px;
+    margin-left: -46px;
+  }
+}
+
+/* ── El final: la frase, la luna y el cohete ── */
+.story-line.finale {
+  bottom: 9vh;
+  font-size: clamp(44px, 6.4vw, 112px);
+}
+
+
+/* ── Al terminar: volver al inicio, grande y al centro ── */
+.story-end {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  pointer-events: auto;
+  translate: -50% -50%;
+}
+
+.story-end[hidden] {
+  display: none;
+}
+
+.story-home {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 22px 38px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--paper);
+  box-shadow: 0 20px 60px #0a0a0bcc, 0 0 0 10px #74acdf33;
+  font: 400 clamp(30px, 3.4vw, 54px) / 1 var(--serif);
+  color: var(--ink);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: scale 0.5s cubic-bezier(0.34, 1.8, 0.5, 1), box-shadow 0.3s;
+}
+
+.story-home span {
+  font-size: 0.7em;
+}
+
+.story-home:hover {
+  scale: 1.05;
+  box-shadow: 0 20px 60px #0a0a0bcc, 0 0 0 14px #74acdf55;
+}
+
+.story-again {
+  padding: 10px 20px;
+  border: 1px solid #efece455;
+  border-radius: 999px;
+  background: #0a0a0bb3;
+  backdrop-filter: blur(12px);
+  font: 14px var(--sans);
+  color: var(--paper);
+  cursor: pointer;
+}
+
+.story-again:hover {
+  border-color: var(--paper);
+}
+
+/* Línea chica debajo de la frase, en los capítulos */
+.story-sub {
+  position: absolute;
+  right: 0;
+  bottom: calc(10vh - 34px);
+  left: 0;
+  margin: 0;
+  padding: 0 24px;
+  font: 500 clamp(11px, 1vw, 14px) var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-align: center;
+  color: #74acdf;
+  text-shadow: 0 2px 16px #0a0a0b;
+  opacity: 0;
+}
+
+/* En los capítulos la frase grande se achica un poco para que entre */
+.story-line.big.chapter {
+  bottom: calc(10vh + 26px);
+  font-size: clamp(48px, 7.2vw, 132px);
+}

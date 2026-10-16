@@ -2,19 +2,25 @@
 // caracteres y un cuadrado instanciado por letra, más una pasada de brillo.
 // Si WebGL2 no está disponible, cae a canvas 2D sin brillo.
 
-/** Datos por letra: x, y, cos·tamaño, sin·tamaño, alfa, carácter, acento. */
+/** Datos por letra: x, y, cos·tamaño, sin·tamaño, alfa, carácter, color (0 papel, 1 acento, 2+ paleta). */
 export const STRIDE = 7;
+
+export type Color = [number, number, number];
 
 export interface Renderer {
   resize(width: number, height: number): void;
-  render(data: Float32Array, count: number, accent: [number, number, number]): void;
+  /** `palette` son los colores 2 en adelante; sin ellos se usa el acento. */
+  render(data: Float32Array, count: number, accent: Color, palette?: Color[]): void;
 }
+
+// Papel, acento y hasta cuatro colores propios de la forma
+const COLORS = 6;
 
 const CELL = 64;
 const FONT_PX = 44;
 const COLS = 8;
 const FONT = 'ui-monospace, "SF Mono", Menlo, Consolas, monospace';
-const BASE = [239, 236, 228];
+const BASE: Color = [239, 236, 228];
 
 const VERTEX = `#version 300 es
 in vec2 corner;
@@ -51,15 +57,15 @@ in vec2 spot;
 // Misma precisión que en el vertex shader, o el programa no enlaza
 uniform highp float halo;
 uniform sampler2D atlas;
-uniform vec3 baseColor;
-uniform vec3 accentColor;
+uniform vec3 palette[${COLORS}];
 out vec4 color;
 void main() {
-  vec3 tint = mix(baseColor, accentColor, accent);
+  vec3 tint = palette[int(accent + 0.5)];
+  float colored = step(0.5, accent);
   if (halo > 0.5) {
     // Alfa 0 con color premultiplicado: el halo se suma al fondo
     float fall = max(0.0, 1.0 - length(spot) * 2.0);
-    color = vec4(tint * fall * fall * alpha * (0.06 + 0.17 * accent), 0.0);
+    color = vec4(tint * fall * fall * alpha * (0.06 + 0.17 * colored), 0.0);
     return;
   }
   float a = texture(atlas, uv).a * alpha;
@@ -125,9 +131,9 @@ function webgl(canvas: HTMLCanvasElement, chars: string, capacity: number): Rend
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
   gl.uniform2f(gl.getUniformLocation(program, 'grid'), COLS, rows);
-  gl.uniform3f(gl.getUniformLocation(program, 'baseColor'), BASE[0] / 255, BASE[1] / 255, BASE[2] / 255);
   const resolution = gl.getUniformLocation(program, 'resolution');
-  const accentColor = gl.getUniformLocation(program, 'accentColor');
+  const paletteColors = gl.getUniformLocation(program, 'palette');
+  const colors = new Float32Array(COLORS * 3);
   const halo = gl.getUniformLocation(program, 'halo');
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
@@ -138,9 +144,12 @@ function webgl(canvas: HTMLCanvasElement, chars: string, capacity: number): Rend
       gl.viewport(0, 0, width, height);
       gl.uniform2f(resolution, width, height);
     },
-    render(data, count, accent) {
+    render(data, count, accent, palette = []) {
       gl.clear(gl.COLOR_BUFFER_BIT);
-      gl.uniform3f(accentColor, accent[0] / 255, accent[1] / 255, accent[2] / 255);
+      [BASE, accent, ...palette].slice(0, COLORS).forEach((c, i) => colors.set([c[0] / 255, c[1] / 255, c[2] / 255], i * 3));
+      // Sin paleta propia, los colores de más repiten el acento
+      for (let i = palette.length + 2; i < COLORS; i++) colors.set([accent[0] / 255, accent[1] / 255, accent[2] / 255], i * 3);
+      gl.uniform3fv(paletteColors, colors);
       gl.bufferSubData(gl.ARRAY_BUFFER, 0, data, 0, count * STRIDE);
       // Dos pasadas sobre los mismos datos: primero el brillo, después las letras
       gl.uniform1f(halo, 1);
@@ -156,17 +165,17 @@ function canvas2d(canvas: HTMLCanvasElement, chars: string): Renderer {
   const scale = 1 / (CELL * (16 / FONT_PX));
   return {
     resize() {},
-    render(data, count, accent) {
+    render(data, count, accent, palette = []) {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.font = `600 16px ${FONT}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      const colors = [`rgb(${BASE})`, `rgb(${accent.map(Math.round)})`];
+      const colors = [BASE, accent, ...palette].map((c) => `rgb(${c.map(Math.round)})`);
       for (let i = 0; i < count; i++) {
         const k = i * STRIDE;
         ctx.globalAlpha = data[k + 4];
-        ctx.fillStyle = colors[data[k + 6]];
+        ctx.fillStyle = colors[data[k + 6]] ?? colors[1];
         ctx.setTransform(data[k + 2] * scale, data[k + 3] * scale, -data[k + 3] * scale, data[k + 2] * scale, data[k], data[k + 1]);
         ctx.fillText(chars[data[k + 5]], 0, 0);
       }

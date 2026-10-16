@@ -1,0 +1,107 @@
+---
+// Contenido interno de la sección Labs: una hoja de contacto de experimentos.
+// El panel contenedor vive en Home.astro; esto solo renderiza lo que va adentro.
+// La interacción está en src/scripts/labs.ts (setupLabs).
+import '../styles/labs.css';
+
+interface Lab {
+  id: string;
+  name: string;
+  note: string;
+  tags: string;
+  shape: string;
+  href?: string;
+}
+
+interface Copy {
+  label: string;
+  lead: string;
+  leadMuted: string;
+  hint: string;
+  open: string;
+  soon: string;
+}
+
+interface Props {
+  labs: Lab[];
+  copy: Copy;
+  /** Número de la sección, como en las demás. */
+  number?: string;
+}
+
+const { labs, copy, number } = Astro.props;
+const pad = (n: number) => String(n).padStart(2, '0');
+const isExternal = (href?: string) => !!href && href.startsWith('http');
+---
+
+<div class="labs" data-labs>
+  <div class="labs-head">
+    <p class="label">{number && <b>{number}</b>}{copy.label}</p>
+    <p class="lead">
+      {copy.lead} <span>{copy.leadMuted}</span>
+    </p>
+  </div>
+
+  <div class="strip">
+    <ol class="sheet" data-sheet aria-label={copy.label}>
+      {
+        labs.map((lab, i) => {
+          const Tag = lab.href ? 'a' : 'button';
+          return (
+            <li>
+              <Tag
+                class="frame"
+                data-frame
+                data-lab-id={lab.id}
+                data-shape={lab.shape}
+                href={lab.href}
+                target={isExternal(lab.href) ? '_blank' : undefined}
+                rel={isExternal(lab.href) ? 'noopener noreferrer' : undefined}
+                type={lab.href ? undefined : 'button'}
+              >
+                <span class="frame-img">
+                  <img
+                    src={`/labs/${lab.id}.webp`}
+                    alt=""
+                    width="800"
+                    height="520"
+                    loading="lazy"
+                    decoding="async"
+                    draggable="false"
+                  />
+                </span>
+                <span class="frame-no" aria-hidden="true">EXP {pad(i + 1)}</span>
+                <span class="sr-only">{lab.name}</span>
+              </Tag>
+            </li>
+          );
+        })
+      }
+    </ol>
+  </div>
+
+  <div class="notes" aria-live="polite">
+    <p class="labs-hint" data-hint>{copy.hint}</p>
+    {
+      labs.map((lab, i) => (
+        <article class="note" data-note hidden>
+          <p class="note-no">EXP {pad(i + 1)}</p>
+          <h3>{lab.name}</h3>
+          <p class="story">{lab.note}</p>
+          <p class="tags">
+            {lab.tags.split(' · ').map((tag) => (
+              <span>{tag}</span>
+            ))}
+            {lab.href ? (
+              <a href={lab.href} target={isExternal(lab.href) ? '_blank' : undefined} rel={isExternal(lab.href) ? 'noopener noreferrer' : undefined}>
+                {copy.open}
+              </a>
+            ) : (
+              <span class="soon">{copy.soon}</span>
+            )}
+          </p>
+        </article>
+      ))
+    }
+  </div>
+</div>

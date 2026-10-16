@@ -82,6 +82,9 @@ export function createGlyphField(canvas: HTMLCanvasElement, options: Options = {
   let livePts: Float32Array | null = null;
   let flatSize = 0;
   let hidden: Uint8Array | null = null;
+  // Color de cada letra cuando la forma trae los suyos
+  let colors: Uint8Array | null = null;
+  let palette: Shape['palette'];
   let anchor: (() => number | null) | null = null;
   let centerY = 0;
 
@@ -237,6 +240,8 @@ export function createGlyphField(canvas: HTMLCanvasElement, options: Options = {
     const marks = shape.marks?.(count);
     flatSize = marks?.flatSize ?? 0;
     hidden = marks?.hidden ?? null;
+    colors = shape.colors?.(count) ?? null;
+    palette = shape.palette;
     const flight = options.flight ?? FLIGHTS[flightIndex++ % FLIGHTS.length];
     freeze();
     flying?.cancel();
@@ -389,9 +394,9 @@ export function createGlyphField(canvas: HTMLCanvasElement, options: Options = {
       data[k + 3] = Math.sin(turn) * s;
       data[k + 4] = p.flat ? 1 : p.alpha * (0.28 + depth * 0.72);
       data[k + 5] = p.ch;
-      data[k + 6] = i >= accentFrom ? 1 : 0;
+      data[k + 6] = colors ? colors[i] : i >= accentFrom ? 1 : 0;
     }
-    renderer.render(data, drawn, [view.r, view.g, view.b]);
+    renderer.render(data, drawn, [view.r, view.g, view.b], palette);
   }
 
   window.addEventListener('resize', resize);

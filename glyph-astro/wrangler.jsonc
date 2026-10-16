@@ -2,6 +2,9 @@
   "name": "gabriel-perez-diez",
   "compatibility_date": "2026-10-01",
   "main": "./worker/index.js",
+  "routes": [
+    { "pattern": "gabsplat.dev", "custom_domain": true }
+  ],
   // Workers AI: Whisper para transcribir la voz
   "ai": { "binding": "AI" },
   "assets": {

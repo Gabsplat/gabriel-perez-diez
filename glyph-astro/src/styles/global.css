@@ -74,8 +74,7 @@ input:focus-visible {
 }
 
 /* Dos capas fijas: la escena ASCII atrás y las letras sueltas adelante */
-#scene,
-#glyphs {
+#scene {
   position: fixed;
   inset: 0;
   width: 100%;
@@ -181,6 +180,46 @@ nav a[aria-current] {
 .clock time {
   color: var(--paper);
   font-variant-numeric: tabular-nums;
+}
+
+/* Hora e idioma, juntos en la esquina */
+.corner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.langs {
+  display: flex;
+  margin: 0;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+}
+
+.langs a {
+  padding: 4px 9px;
+  border-radius: 999px;
+  font: 11px var(--mono);
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  transition: color 0.25s, background 0.25s;
+}
+
+.langs a:hover {
+  color: var(--paper);
+}
+
+.langs a[aria-current='true'] {
+  color: var(--ink);
+  background: var(--paper);
+}
+
+/* Primera visita: no se muestra nada hasta saber el idioma (como mucho 1,2 s) */
+.lang-pending body {
+  visibility: hidden;
 }
 
 /* ── Guía lateral: un trazo por sección ── */
@@ -298,11 +337,14 @@ main {
 }
 
 .eyebrow i {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 0 0 var(--accent);
+  /* Bandera argentina: celeste, blanco con el sol, celeste */
+  width: 15px;
+  height: 10px;
+  border-radius: 2px;
+  background:
+    radial-gradient(circle, #f6b40e 0 1.4px, transparent 1.9px),
+    linear-gradient(#74acdf 0 33.3%, #fff 0 66.6%, #74acdf 0);
+  box-shadow: 0 0 0 0 #74acdf;
   animation: beat 2.4s ease-out infinite;
 }
 
@@ -457,52 +499,191 @@ h1 .muted {
 }
 
 /* ── Proyectos ── */
-.projects {
-  margin: 22px 0 28px;
-  padding: 0;
-  list-style: none;
+/* El rótulo lleva a la derecha en qué estación está el dial */
+#proyectos .label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
 }
 
-.projects button {
+.count b {
+  margin: 0;
+  color: var(--tint, var(--accent));
+}
+
+.project-name {
+  margin: 22px 0 12px;
+  font: 400 clamp(40px, 4.8vw, 74px) / 1 var(--serif);
+  letter-spacing: -0.02em;
+  color: var(--paper);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.meta {
+  margin: 0 0 18px;
+  font: 11px var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tint, var(--accent));
+}
+
+.more {
+  font-size: 13px;
+  color: var(--tint, var(--accent));
+}
+
+/* Reserva el alto del texto más largo para que el dial no salte */
+.project-detail {
+  min-height: 330px;
+}
+
+/* ── Sintonizador ── */
+.tuner {
   display: flex;
-  align-items: baseline;
-  gap: 18px;
-  width: 100%;
-  padding: 6px 0;
+  align-items: center;
+  gap: 12px;
+  margin-top: 26px;
+}
+
+.tune {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  font: 14px var(--mono);
+  color: var(--soft);
+  cursor: pointer;
+  transition: color 0.25s, border-color 0.25s;
+}
+
+.tune:hover {
+  color: var(--paper);
+  border-color: #efece455;
+}
+
+/* La escala: rayitas finas cada 8 px y una línea de base */
+.dial {
+  --pad: 14px;
+  position: relative;
+  flex: 1;
+  height: 66px;
+  border-radius: 8px;
+  background:
+    repeating-linear-gradient(90deg, #efece426 0 1px, transparent 1px 8px) left var(--pad) bottom 12px / calc(100% - var(--pad) * 2) 8px no-repeat,
+    linear-gradient(#efece42e, #efece42e) left var(--pad) bottom 12px / calc(100% - var(--pad) * 2) 1px no-repeat;
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+}
+
+.dial.dragging {
+  cursor: grabbing;
+}
+
+.station {
+  position: absolute;
+  bottom: 12px;
+  left: calc(var(--pad) + (100% - var(--pad) * 2) * var(--at));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 26px;
+  padding: 0;
   border: 0;
   background: none;
   color: var(--faint);
-  font: 400 clamp(32px, 3.6vw, 56px) / 1.06 var(--serif);
-  letter-spacing: -0.015em;
-  text-align: left;
+  translate: -50% 0;
   cursor: pointer;
-  transition: color 0.3s, translate 0.5s var(--ease);
-}
-
-.projects button span {
-  width: 22px;
-  font: 11px var(--mono);
-  letter-spacing: 0.06em;
-  color: var(--faint);
   transition: color 0.3s;
 }
 
-.projects button:hover {
+/* Cada estación es una rayita más alta */
+.station::after {
+  content: '';
+  width: 1px;
+  height: 18px;
+  background: currentColor;
+  transition: height 0.4s var(--ease);
+}
+
+.station-number {
+  margin-bottom: 6px;
+  font: 10px var(--mono);
+  letter-spacing: 0.04em;
+}
+
+/* El nombre aparece arriba solo al pasar por la estación */
+.station-name {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  margin-bottom: 4px;
+  font: 10px var(--mono);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--soft);
+  opacity: 0;
+  translate: -50% 4px;
+  transition: opacity 0.25s, translate 0.25s;
+  pointer-events: none;
+}
+
+.station:hover {
   color: var(--soft);
 }
 
-.projects button[aria-pressed='true'] {
-  color: var(--paper);
-  translate: 12px 0;
+.station:hover .station-name {
+  opacity: 1;
+  translate: -50% 0;
 }
 
-.projects button[aria-pressed='true'] span {
-  color: var(--accent);
+.station[aria-pressed='true'] {
+  color: var(--tint, var(--accent));
 }
 
-/* Reserva el alto del texto más largo para que la lista no salte */
-.project-detail {
-  min-height: 250px;
+.station[aria-pressed='true']::after {
+  height: 26px;
+}
+
+/* La aguja: una línea con brillo que se desliza por la escala */
+.needle {
+  position: absolute;
+  top: 2px;
+  bottom: 6px;
+  left: calc(var(--pad) + (100% - var(--pad) * 2) * var(--needle));
+  width: 2px;
+  border-radius: 2px;
+  background: var(--tint, var(--accent));
+  box-shadow: 0 0 14px var(--tint, var(--accent));
+  translate: -1px 0;
+  pointer-events: none;
+  transition: left 0.6s var(--ease), background 0.4s, box-shadow 0.4s;
+}
+
+.needle::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: inherit;
+}
+
+.dial.dragging .needle {
+  transition: background 0.4s, box-shadow 0.4s;
 }
 
 .story {
@@ -600,78 +781,6 @@ h1 .muted {
   margin-top: 22px;
 }
 
-/* ── Tarjetas de Labs: capa fija, como las letras ── */
-.orbit {
-  position: fixed;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-}
-
-.card {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: clamp(150px, 13.5vw, 204px);
-  padding: 6px 6px 0;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: var(--surface);
-  color: var(--muted);
-  pointer-events: auto;
-  will-change: transform;
-  box-shadow: 0 24px 50px #000b, inset 0 1px 0 #ffffff0d;
-  transition: border-color 0.3s, color 0.3s, box-shadow 0.3s;
-}
-
-.card img {
-  display: block;
-  width: 100%;
-  height: auto;
-  border-radius: 11px;
-  pointer-events: none;
-}
-
-.card span {
-  display: block;
-  padding: 9px 6px 10px;
-  font-size: 12px;
-  text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.card:hover,
-.card.on {
-  z-index: 1;
-  border-color: var(--accent);
-  color: var(--paper);
-  box-shadow: 0 30px 60px #000d, 0 0 0 4px #ff7a3d1f;
-}
-
-.lab-detail {
-  min-height: 190px;
-}
-
-.lab-empty {
-  margin: 0;
-  padding-top: 18px;
-  border-top: 1px solid var(--line);
-  font: 11px var(--mono);
-  letter-spacing: 0.04em;
-  color: var(--faint);
-}
-
-.lab-detail:has(article:not([hidden])) .lab-empty {
-  display: none;
-}
-
-.lab-detail h3 {
-  margin: 0 0 12px;
-  font: 400 clamp(28px, 2.8vw, 40px) / 1.05 var(--serif);
-}
-
 /* ── Contacto ── */
 .talk {
   display: flex;
@@ -719,384 +828,6 @@ footer {
   opacity: 1;
   translate: 0;
   filter: none;
-}
-
-/* ── Mimo: una barra de vidrio al pie, con aurora al escuchar ── */
-.agent {
-  --level: 0;
-  position: fixed;
-  left: 50%;
-  bottom: clamp(16px, 3svh, 28px);
-  z-index: 4;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  width: min(92vw, 460px);
-  translate: -50% 0;
-  pointer-events: none;
-}
-
-.agent > * {
-  pointer-events: auto;
-}
-
-.agent-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 5px 18px 5px 5px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--glass);
-  backdrop-filter: blur(20px) saturate(1.4);
-  box-shadow: 0 18px 50px #000a, inset 0 1px 0 #ffffff0f;
-  transition: border-color 0.3s, padding 0.4s var(--ease);
-}
-
-.agent-bar:hover {
-  border-color: #efece433;
-}
-
-.agent-more {
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: 50%;
-  background: none;
-  color: var(--muted);
-  font: 12px var(--mono);
-  cursor: pointer;
-  transition: color 0.2s, background 0.2s;
-}
-
-.agent-more[aria-expanded='true'] {
-  color: var(--ink);
-  background: var(--paper);
-}
-
-.agent-hint {
-  font-size: 13px;
-  color: var(--paper);
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-/* Conversando, el rótulo pasa a ser el estado: una palabra, en mono */
-.agent[data-open] .agent-hint {
-  font: 11px var(--mono);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-  cursor: default;
-}
-
-.agent-orb {
-  position: relative;
-  width: 60px;
-  height: 60px;
-  transition: width 0.5s var(--ease), height 0.5s var(--ease);
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: none;
-  cursor: pointer;
-}
-
-/* Mimo, el blob: sobresale un poco del botón para poder estirarse y rebotar */
-.agent-blob {
-  position: absolute;
-  inset: -8%;
-  display: block;
-  transition: scale 0.4s var(--ease);
-}
-
-.agent-orb:hover .agent-blob {
-  scale: 1.07;
-}
-
-.agent-orb:active .agent-blob {
-  scale: 0.94;
-}
-
-.agent-blob svg {
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-
-.blob-heart {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  color: #ff5d8f;
-  font-size: 18px;
-  line-height: 1;
-  pointer-events: none;
-}
-
-/* Aurora: un anillo de colores desenfocado que gira detrás del botón */
-.aurora {
-  position: absolute;
-  inset: -7px;
-  border-radius: 50%;
-  background: conic-gradient(#ff7a3d, #b294ff, #6cace4, #7ee0a6, #ffd05c, #ff7a3d);
-  filter: blur(9px);
-  opacity: 0;
-  scale: calc(1 + var(--level) * 0.9);
-  transition: opacity 0.4s;
-  animation: agent-spin 5s linear infinite;
-}
-
-/* En reposo la aurora late apenas, para invitar a tocar */
-.agent[data-state='idle'] .aurora {
-  animation: agent-spin 5s linear infinite, agent-invite 2.6s ease-in-out infinite;
-}
-
-@keyframes agent-invite {
-  50% {
-    opacity: 0.4;
-  }
-}
-
-/* Conversando, Mimo crece para que se le vean los gestos */
-.agent[data-open] .agent-orb {
-  width: 104px;
-  height: 104px;
-}
-
-/* Micrófono: marca que se le habla. Se va cuando ya está escuchando */
-.agent-mic {
-  position: absolute;
-  right: -3px;
-  bottom: -3px;
-  width: 24px;
-  height: 24px;
-  padding: 4px;
-  border-radius: 50%;
-  background: var(--paper);
-  fill: none;
-  stroke: var(--ink);
-  stroke-width: 2;
-  stroke-linecap: round;
-  transition: opacity 0.3s, scale 0.3s;
-}
-
-.agent[data-open] .agent-mic {
-  opacity: 0;
-  scale: 0.5;
-}
-
-.agent[data-state='listening'] .aurora {
-  opacity: 0.6;
-}
-
-.agent[data-state='hearing'] .aurora,
-.agent[data-state='speaking'] .aurora {
-  opacity: 0.95;
-}
-
-.agent[data-state='thinking'] .aurora {
-  opacity: 0.45;
-  animation-duration: 1.1s;
-}
-
-@keyframes agent-spin {
-  to {
-    rotate: 1turn;
-  }
-}
-
-/* Lo que escuchó, en cursiva apagada, y los tiempos de cada paso en mono */
-.agent-heard {
-  margin: 0;
-  padding: 5px 12px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--glass);
-  backdrop-filter: blur(16px);
-  font: 10px var(--mono);
-  letter-spacing: 0.02em;
-  color: var(--muted);
-  text-align: center;
-}
-
-.agent-heard:empty {
-  display: none;
-}
-
-.agent-say {
-  min-height: 1.3em;
-  margin: 0;
-  padding: 10px 18px;
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  background: var(--glass);
-  backdrop-filter: blur(20px) saturate(1.4);
-  font: 400 clamp(18px, 1.7vw, 22px) / 1.3 var(--serif);
-  text-align: center;
-  text-wrap: balance;
-}
-
-.agent-say:empty {
-  display: none;
-}
-
-.agent-panel {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 10px;
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  background: var(--glass);
-  backdrop-filter: blur(20px) saturate(1.4);
-  box-shadow: 0 18px 50px #000a, inset 0 1px 0 #ffffff0f;
-}
-
-.agent-panel[hidden] {
-  display: none;
-}
-
-.agent-tips {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
-}
-
-.agent-tips button,
-.agent-type input {
-  min-height: 32px;
-  padding: 0 13px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: none;
-  color: var(--soft);
-  font-size: 12px;
-}
-
-.agent-tips button {
-  cursor: pointer;
-  transition: color 0.2s, border-color 0.2s, background 0.2s, scale 0.3s var(--ease);
-}
-
-.agent-tips button:hover {
-  color: var(--paper);
-  border-color: #efece455;
-  background: #efece40d;
-}
-
-.agent-tips button:active {
-  scale: 0.96;
-}
-
-.agent-type input {
-  width: 220px;
-  color: var(--paper);
-  text-align: center;
-  outline-offset: -2px;
-}
-
-.agent-type input::placeholder {
-  color: var(--faint);
-}
-
-/* Tarjetas que muestra el asistente */
-.mini {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 34px 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  background: var(--glass);
-  backdrop-filter: blur(20px) saturate(1.4);
-  font-size: 12px;
-  box-shadow: 0 18px 50px #000a, inset 0 1px 0 #ffffff0f;
-}
-
-.mini-text {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-
-.mini-text strong {
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.mini-text span {
-  font-size: 11px;
-  color: var(--muted);
-}
-
-.mini-text ul {
-  margin: 6px 0 0;
-  padding-left: 16px;
-  color: var(--soft);
-  line-height: 1.6;
-}
-
-.mini button,
-.mini a {
-  flex: none;
-  min-height: 30px;
-  padding: 0 11px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: none;
-  line-height: 28px;
-  cursor: pointer;
-  transition: border-color 0.2s;
-}
-
-.mini button:hover,
-.mini a:hover {
-  border-color: #efece455;
-}
-
-.mini .mini-close {
-  position: absolute;
-  top: 4px;
-  right: 6px;
-  min-height: 0;
-  padding: 0 5px;
-  border: 0;
-  color: var(--muted);
-  font-size: 16px;
-  line-height: 22px;
-}
-
-.player [data-player] {
-  width: 34px;
-  padding: 0;
-  font-size: 10px;
-  letter-spacing: -2px;
-}
-
-.eq {
-  display: flex;
-  align-items: flex-end;
-  gap: 3px;
-  width: 30px;
-  height: 30px;
-  padding: 7px 5px;
-  border-radius: 9px;
-  background: var(--accent);
-}
-
-.eq i {
-  flex: 1;
-  height: 100%;
-  border-radius: 2px;
-  background: var(--ink);
-  transform: scaleY(0.3);
-  transform-origin: bottom;
 }
 
 /* Página del personaje: una sola pantalla, controles al pie */
@@ -1277,16 +1008,7 @@ footer {
   }
 
   .project-detail {
-    min-height: 330px;
-  }
-
-  .card {
-    width: 112px;
-    border-radius: 12px;
-  }
-
-  .card img {
-    border-radius: 8px;
+    min-height: 440px;
   }
 
   footer {
@@ -1316,47 +1038,6 @@ footer {
     gap: 4px;
   }
 
-  /* El asistente queda arriba del menú */
-  .agent {
-    bottom: 76px;
-  }
-
-  .agent-orb {
-    width: 54px;
-    height: 54px;
-  }
-
-  .agent[data-open] .agent-orb {
-    width: 88px;
-    height: 88px;
-  }
-
-  /* Los ejemplos van en una sola fila que se desliza, para tapar lo menos posible */
-  .agent-panel {
-    width: 100%;
-    padding: 8px;
-  }
-
-  .agent-tips {
-    flex-wrap: nowrap;
-    justify-content: flex-start;
-    width: 100%;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .agent-tips button {
-    flex: none;
-  }
-
-  .agent-type,
-  .agent-type input {
-    width: 100%;
-  }
-
-  .mini {
-    flex-wrap: wrap;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1364,13 +1045,11 @@ footer {
     scroll-behavior: auto;
   }
 
-  .aurora,
   .eyebrow i,
   .scroll-hint i::after {
     animation: none !important;
   }
 
-  .agent-orb,
   .nav-mark,
   .js [data-reveal] > * {
     transition: none;

@@ -4,7 +4,7 @@
 // Para sumar una forma nueva alcanza con agregar una entrada a SHAPES usando
 // alguno de los generadores: text(), path() o uno paramétrico.
 
-import { scene } from './scene';
+import { balance, character, flask, house, jet, microwave, papers, phenol, ufo } from './icons';
 
 export type Points = Float32Array;
 
@@ -29,9 +29,12 @@ export interface Shape {
   scale?: number;
   /** Color de acento [r, g, b]. */
   accent?: [number, number, number];
+  /** Color de cada letra: 0 papel, 1 acento, 2 en adelante `palette`. Se pide después de `build`. */
+  colors?: (n: number) => Uint8Array;
+  /** Colores propios de la forma, a partir del índice 2. */
+  palette?: [number, number, number][];
 }
 
-const SERIF = '400 300px Instrument, Georgia, serif';
 const MONO = '700 300px ui-monospace, "SF Mono", Menlo, Consolas, monospace';
 const SANS = '600 300px Manrope, Arial, sans-serif';
 
@@ -149,32 +152,6 @@ function helix(n: number): Points {
   return out;
 }
 
-/** Metano: un átomo central, cuatro alrededor y sus enlaces. */
-function molecule(n: number): Points {
-  const out = new Float32Array(n * 3);
-  const arms = [[1, 1, 1], [1, -1, -1], [-1, 1, -1], [-1, -1, 1]].map((v) => v.map((c) => (c / Math.sqrt(3)) * 0.95));
-  for (let i = 0; i < n; i++) {
-    const kind = i % 10;
-    // Punto al azar sobre una esfera
-    const y = rand(-1, 1), a = rand(0, Math.PI * 2), r = Math.sqrt(1 - y * y);
-    const sx = Math.cos(a) * r, sz = Math.sin(a) * r;
-    let x = 0, py = 0, z = 0;
-    if (kind < 3) {
-      x = sx * 0.34; py = y * 0.34; z = sz * 0.34;
-    } else {
-      const arm = arms[i % 4];
-      if (kind < 8) {
-        x = arm[0] + sx * 0.2; py = arm[1] + y * 0.2; z = arm[2] + sz * 0.2;
-      } else {
-        const t = rand(0.35, 0.8);
-        x = arm[0] * t + rand(-0.02, 0.02); py = arm[1] * t + rand(-0.02, 0.02); z = arm[2] * t;
-      }
-    }
-    out[i * 3] = x; out[i * 3 + 1] = py; out[i * 3 + 2] = z;
-  }
-  return out;
-}
-
 /** Letras sueltas flotando por toda la pantalla. */
 export function scatter(n: number): Points {
   const out = new Float32Array(n * 3);
@@ -191,61 +168,36 @@ const BLUE: Shape['accent'] = [108, 172, 228];
 const GREEN: Shape['accent'] = [126, 224, 166];
 const PINK: Shape['accent'] = [255, 110, 150];
 const YELLOW: Shape['accent'] = [255, 208, 92];
-const VIOLET: Shape['accent'] = [178, 148, 255];
+const CORAL: [number, number, number] = [255, 138, 118];
+const MINT: [number, number, number] = [196, 255, 228];
+const SCREEN: [number, number, number] = [110, 240, 210];
+const GLASS: [number, number, number] = [150, 214, 255];
+const FIRE: [number, number, number] = [255, 128, 56];
+const HYDROGEN: [number, number, number] = [214, 232, 255];
+const OXYGEN: [number, number, number] = [255, 96, 96];
+// Los colores de Nerdconf
+const NERD_YELLOW: Shape['accent'] = [255, 222, 74];
+const NERD_PINK: [number, number, number] = [255, 92, 170];
+const NERD_ORANGE: [number, number, number] = [255, 118, 52];
+const NERD_CYAN: [number, number, number] = [92, 200, 222];
 const LAB = 0.5;
 
 export const SHAPES: Record<string, Shape> = {
   scatter: { build: scatter, float: 0.2, accent: ORANGE },
-  // Portada: laptop con código, Messi y mate; después del `ship()`, el cohete
-  summit: { ...scene(), float: 0.006, accent: ORANGE },
-  rocket: {
-    build: path('M50 4c11 11 16 27 16 45v19H34V49C34 31 39 15 50 4z M34 50 20 68v14l14-9z M66 50l14 18v14l-14-9z M44 31a6 6 0 1 0 12 0a6 6 0 1 0-12 0 M41 72h18l-4 13-5-6-5 6z'),
-    float: 0.03,
-    scale: 0.8,
-    accent: ORANGE,
-  },
-  // Bildenlex: propiedad intelectual y derecho
-  section: { build: text('§', SERIF), float: 0.012, accent: BLUE },
-  // Legali / LexFlow: documentos generados
-  document: {
-    build: path(
-      'M22 8h38l20 20v64H22z M60 8v20h20 M33 44h36v5H33z M33 57h36v5H33z M33 70h24v5H33z',
-      3.4,
-    ),
-    float: 0.012,
-    accent: GREEN,
-  },
-  // Mi Casa Decoraciones
-  house: {
-    build: path('M50 10 8 46h11v44h24V64h14v26h24V46h11z'),
-    float: 0.012,
-    accent: YELLOW,
-  },
-  // Nerdconf: experiencias web
-  code: { build: text('</>', MONO), float: 0.012, accent: VIOLET },
-  // Labs: matraz; al señalar una tarjeta, la forma de ese experimento
-  flask: {
-    build: path('M40 9h20v7h-4v23l25 42a7 7 0 0 1-6 10H25a7 7 0 0 1-6-10l25-42V16h-4z M33 66h34l10 17H23z', 3.2),
-    scale: 0.62,
-    accent: GREEN,
-  },
-  microwave: {
-    build: path(
-      'M8 24h84v52H8z M16 32h50v36H16z M74 34h10v6H74z M74 46h10v6H74z M74 62a5 5 0 1 0 10 0a5 5 0 1 0-10 0',
-      3.2,
-    ),
-    scale: LAB,
-    accent: YELLOW,
-  },
-  jet: {
-    build: path(
-      'M50 6c4 0 6 8 6 16v14l34 22v8l-34-9v18l10 9v6l-16-4-16 4v-6l10-9V57l-34 9v-8l34-22V22c0-8 2-16 6-16z',
-    ),
-    scale: LAB,
-    accent: BLUE,
-  },
-  smiley: { build: text(':)', MONO), scale: LAB, accent: ORANGE },
-  molecule: { build: molecule, spin: true, scale: LAB, accent: GREEN },
+  // Bildenlex: propiedad intelectual y derecho. La balanza se mece
+  balanza: { ...balance, float: 0.008, accent: BLUE, palette: [YELLOW!] },
+  // Legali / LexFlow: hojas que se escriben solas y salen selladas
+  papeles: { ...papers, float: 0.008, scale: 1.12, accent: GREEN },
+  // Mi Casa Decoraciones: cortinas que se mecen y la chimenea prendida
+  casa: { ...house, float: 0.008, accent: YELLOW, palette: [CORAL, GREEN!] },
+  // Nerdconf: el OVNI de su sitio, abduciendo a la vaca rosa
+  ovni: { ...ufo, float: 0.008, accent: NERD_YELLOW, palette: [NERD_PINK, NERD_ORANGE, NERD_CYAN] },
+  // Labs: un matraz que burbujea; al señalar una tarjeta, la forma de ese experimento
+  flask: { ...flask, float: 0.008, scale: 0.64, accent: GREEN, palette: [MINT] },
+  microwave: { ...microwave, float: 0.006, scale: LAB, accent: YELLOW, palette: [SCREEN, CORAL] },
+  jet: { ...jet, float: 0.006, scale: 0.56, accent: BLUE, palette: [GLASS, FIRE] },
+  smiley: { ...character, float: 0.006, scale: 0.56, accent: ORANGE, palette: [PINK!] },
+  molecule: { ...phenol, spin: true, float: 0.006, scale: 0.56, accent: GREEN, palette: [HYDROGEN, OXYGEN] },
   braces: { build: text('{ }', MONO), float: 0.012, accent: YELLOW },
   helix: { build: helix, spin: true, float: 0.014, scale: 0.9, accent: GREEN },
   at: { build: text('@', SANS), float: 0.012, accent: PINK },

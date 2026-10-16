@@ -1,51 +1,98 @@
 ---
-// Página completa del portfolio. Atiende Mimo, el blob.
+// Página completa del portfolio, en el idioma que se pida.
 import '../styles/global.css';
-import { experience, labs, projects, stack } from '../data/site';
+import { content, type Lang } from '../data/site';
+import { copy, HOME, LANGS } from '../i18n';
+import Labs from './Labs.astro';
+import { STORY_COPY } from '../data/family';
+import { JOURNEY_COPY } from '../data/journey';
+import '../styles/story.css';
+
+const { lang } = Astro.props as { lang: Lang };
+const t = copy[lang];
+const storyCopy = STORY_COPY[lang];
+const { experience, labs, projects, stack } = content(lang);
 
 // Secciones del recorrido: alimentan el menú y la guía lateral
-const sections = [
-  { id: 'inicio', name: 'Inicio' },
-  { id: 'proyectos', name: 'Proyectos' },
-  { id: 'labs', name: 'Labs' },
-  { id: 'sobre-mi', name: 'Sobre mí' },
-  { id: 'tecnologias', name: 'Tecnologías' },
-  { id: 'contacto', name: 'Contacto' },
-];
+const sections = (['inicio', 'proyectos', 'labs', 'sobre-mi', 'tecnologias', 'contacto'] as const).map((id) => ({ id, name: t.sections[id] }));
+// Número de dos cifras y lugar de cada proyecto en el dial, de 0 a 1
+const pad = (n: number) => String(n).padStart(2, '0');
+const stationAt = (index: number) => (projects.length > 1 ? index / (projects.length - 1) : 0.5);
 const menu = sections.filter((section) => !['inicio', 'tecnologias'].includes(section.id));
 ---
 
 <!doctype html>
-<html lang="es">
+<html lang={lang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="theme-color" content="#0a0a0b" />
-    <meta
-      name="description"
-      content="Gabriel Pérez Diez. Desarrollador frontend. Vibecoder que ejecuta y lee el diff."
-    />
-    <title>Gabriel Pérez Diez · Frontend</title>
+    <meta name="description" content={t.description} />
+    <title>{t.title}</title>
+    {LANGS.map((other) => <link rel="alternate" hreflang={other} href={HOME[other]} />)}
     <link rel="icon" href="data:," />
     <link rel="preload" href="/fonts/instrument-serif.ttf" as="font" type="font/ttf" crossorigin />
     <script is:inline>
       document.documentElement.classList.add('js');
     </script>
+    <!--
+      Idioma: el que la persona eligió queda guardado. En la primera visita
+      decide el país (lo dice el Worker de Cloudflare) y, si no responde, el
+      idioma del navegador. Mientras decide, la página no se muestra.
+    -->
+    <script is:inline>
+      (function () {
+        var here = document.documentElement.lang;
+        var paths = { es: '/', en: '/en/' };
+        var go = function (lang) {
+          if (lang !== here && paths[lang]) location.replace(paths[lang] + location.hash);
+          else document.documentElement.classList.remove('lang-pending');
+        };
+        var saved = null;
+        try { saved = localStorage.getItem('lang'); } catch (e) {}
+        if (saved) return go(saved);
+        document.documentElement.classList.add('lang-pending');
+        var spanish = /^(AR|BO|CL|CO|CR|CU|DO|EC|ES|GQ|GT|HN|MX|NI|PA|PE|PR|PY|SV|UY|VE)$/;
+        var fromBrowser = function () { return /^es\b/i.test(navigator.language || '') ? 'es' : 'en'; };
+        var decide = function (lang) {
+          try { localStorage.setItem('lang', lang); } catch (e) {}
+          go(lang);
+        };
+        var timer = setTimeout(function () { decide(fromBrowser()); }, 1200);
+        fetch('/api/geo')
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (geo) {
+            clearTimeout(timer);
+            decide(geo && geo.country ? (spanish.test(geo.country) ? 'es' : 'en') : fromBrowser());
+          })
+          .catch(function () { clearTimeout(timer); decide(fromBrowser()); });
+      })();
+    </script>
   </head>
   <body>
     <canvas id="scene" aria-hidden="true"></canvas>
-    <canvas id="glyphs" aria-hidden="true"></canvas>
 
     <header id="top">
       <a class="brand" href="#inicio">Gabriel Pérez Diez<span aria-hidden="true">.</span></a>
-      <nav aria-label="Navegación principal">
+      <nav aria-label={t.nav}>
         <span class="nav-mark" aria-hidden="true"></span>
         {menu.map((section) => <a href={`#${section.id}`} data-nav={section.id}>{section.name}</a>)}
       </nav>
-      <p class="clock">Mendoza <time id="clock">--:--</time></p>
+      <div class="corner">
+        <p class="clock">Mendoza <time id="clock">--:--</time></p>
+        <p class="langs" aria-label={t.language}>
+          {
+            LANGS.map((other) => (
+              <a href={HOME[other]} hreflang={other} lang={other} data-lang={other} aria-current={other === lang ? 'true' : undefined}>
+                {other.toUpperCase()}
+              </a>
+            ))
+          }
+        </p>
+      </div>
     </header>
 
-    <ol class="rail" aria-label="Secciones">
+    <ol class="rail" aria-label={t.rail}>
       {
         sections.map((section, index) => (
           <li>
@@ -59,97 +106,101 @@ const menu = sections.filter((section) => !['inicio', 'tecnologias'].includes(se
     </ol>
 
     <main>
-      <section class="panel hero" id="inicio" data-shape="summit" data-scene="cordillera" data-side="right">
+      <section class="panel hero" id="inicio" data-shape="scatter" data-scene="andes" data-side="right">
         <div class="copy">
-          <p class="eyebrow"><i aria-hidden="true"></i>Frontend · Mendoza, Argentina</p>
+          <p class="eyebrow"><i aria-hidden="true"></i>{t.hero.eyebrow}</p>
           <h1>
-            <span>Vibecoder que ejecuta.</span>
-            <span class="muted">Y que lee el diff.</span>
+            <span>{t.hero.lines[0]}</span>
+            <span class="muted">{t.hero.lines[1]}</span>
           </h1>
           <p class="intro">
-            <strong>Soy Gabriel. Programo con IA a toda velocidad y sé lo que estoy pidiendo:</strong>
-            diseño la arquitectura, reviso cada cambio y lo llevo a producción.
+            <strong>{t.hero.lead}</strong>
+            {t.hero.intro}
           </p>
           <p class="actions">
-            <a class="button" href="#proyectos">Ver proyectos</a>
-            <button type="button" class="button ghost" id="call-agent">Hablar con Mimo<span aria-hidden="true">→</span></button>
+            <a class="button" href="#proyectos">{t.hero.work}</a>
+            <a class="button ghost" href="#contacto">{t.hero.talk}<span aria-hidden="true">→</span></a>
           </p>
         </div>
+        <!-- La historia de Gabriel: arranca desde la montaña -->
+        <button type="button" class="play-story" id="play-story"><i aria-hidden="true"></i>{JOURNEY_COPY[lang].play}</button>
         <p class="hero-foot">
-          <a class="scroll-hint" href="#proyectos" aria-label="Ver proyectos"><i aria-hidden="true"></i>Seguí bajando</a>
-          <span class="label">«Hacelo andar» no es mi único prompt</span>
+          <a class="scroll-hint" href="#proyectos" aria-label={t.hero.work}><i aria-hidden="true"></i>{t.hero.scroll}</a>
+          <span class="label">{t.hero.foot}</span>
         </p>
       </section>
 
-      <section class="panel" id="proyectos" data-shape={projects[0].shape} data-scene="flujo" data-side="left">
+      <section class="panel" id="proyectos" data-shape={projects[0].shape} data-scene="ciudad" data-side="left">
         <div class="copy" data-reveal>
-          <p class="label"><b>01</b>Trabajo seleccionado</p>
-          <ul class="projects">
-            {
-              projects.map((project, index) => (
-                <li>
-                  <button
-                    type="button"
-                    data-project={project.id}
-                    data-project-shape={project.shape}
-                    aria-pressed={index === 0 ? 'true' : 'false'}
-                  >
-                    <span>0{index + 1}</span>
-                    {project.name}
-                  </button>
-                </li>
-              ))
-            }
-          </ul>
+          <p class="label">
+            <span><b>01</b>{t.projects.label}</span>
+            <span class="count" aria-hidden="true"><b id="project-now">01</b> / {pad(projects.length)}</span>
+          </p>
           <div class="project-detail" aria-live="polite">
             {
               projects.map((project, index) => (
                 <article data-detail={project.id} hidden={index !== 0}>
+                  <h3 class="project-name">
+                    <span class="sr-only">{project.name}</span>
+                    <span aria-hidden="true" data-name={project.name}>{project.name}</span>
+                  </h3>
+                  <p class="meta">{project.tags}{project.year && ` · ${project.year}`}</p>
                   <p class="story">{project.story}</p>
-                  <p class="tags">{project.tags.split(' · ').map((tag) => <span>{tag}</span>)}</p>
+                  {project.href && (
+                    <a class="more" href={project.href} target="_blank" rel="noopener noreferrer">{t.projects.open}</a>
+                  )}
                 </article>
               ))
             }
           </div>
-        </div>
-      </section>
-
-      <section class="panel" id="labs" data-shape="flask" data-scene="lava" data-side="right">
-        <div class="copy" data-reveal>
-          <p class="label"><b>02</b>Labs</p>
-          <p class="lead">
-            Acá las ideas vuelan: <span>experimentos, proyectos chicos y vibecodeos, publicados apenas
-            funcionan.</span>
-          </p>
-          <div class="lab-detail" aria-live="polite">
-            <p class="lab-empty">Pasá por una tarjeta para ver de qué se trata.</p>
-            {
-              labs.map((lab) => (
-                <article data-lab-detail={lab.id} hidden>
-                  <h3>{lab.name}</h3>
-                  <p class="story">{lab.note}</p>
-                  <p class="tags">
-                    {lab.tags.split(' · ').map((tag) => <span>{tag}</span>)}
-                    {lab.href && (
-                      <a href={lab.href} target={lab.href.startsWith('http') ? '_blank' : undefined} rel="noopener noreferrer">
-                        Abrir ↗
-                      </a>
-                    )}
-                  </p>
-                </article>
-              ))
-            }
+          <!-- Sintonizador: una estación por proyecto. Entran muchos sin que crezca -->
+          <div class="tuner">
+            <button type="button" class="tune" data-step="-1" aria-label={t.projects.prev}>←</button>
+            <div
+              class="dial"
+              role="slider"
+              tabindex="0"
+              aria-label={t.projects.choose}
+              aria-valuemin="1"
+              aria-valuemax={projects.length}
+              aria-valuenow="1"
+              aria-valuetext={projects[0].name}
+              style={`--needle: ${stationAt(0)}`}
+            >
+              {
+                projects.map((project, index) => (
+                  <button
+                    type="button"
+                    class="station"
+                    tabindex="-1"
+                    data-project={project.id}
+                    data-project-shape={project.shape}
+                    data-name={project.name}
+                    aria-pressed={index === 0 ? 'true' : 'false'}
+                    style={`--at: ${stationAt(index)}`}
+                  >
+                    <span class="station-number">{pad(index + 1)}</span>
+                    <span class="station-name">{project.name}</span>
+                  </button>
+                ))
+              }
+              <i class="needle" aria-hidden="true"></i>
+            </div>
+            <button type="button" class="tune" data-step="1" aria-label={t.projects.next}>→</button>
           </div>
         </div>
       </section>
 
-      <section class="panel" id="sobre-mi" data-shape="helix" data-scene="ondas" data-side="left">
+      <section class="panel" id="labs" data-shape="flask" data-scene="lava" data-side="left">
         <div class="copy" data-reveal>
-          <p class="label"><b>03</b>Sobre mí</p>
-          <p class="lead">
-            Construyo interfaces para productos, equipos y eventos. <span>Trabajo con React y TypeScript;
-            cofundé Aftercode Software.</span>
-          </p>
+          <Labs labs={labs} copy={t.labs} number="02" />
+        </div>
+      </section>
+
+      <section class="panel" id="sobre-mi" data-shape="helix" data-scene="vinedos" data-side="left">
+        <div class="copy" data-reveal>
+          <p class="label"><b>03</b>{t.about.label}</p>
+          <p class="lead">{t.about.lead} <span>{t.about.leadMuted}</span></p>
           <ul class="rows">
             {
               experience.map((item) => (
@@ -166,9 +217,9 @@ const menu = sections.filter((section) => !['inicio', 'tecnologias'].includes(se
         </div>
       </section>
 
-      <section class="panel compact" id="tecnologias" data-shape="braces" data-scene="lluvia" data-side="right">
+      <section class="panel compact" id="tecnologias" data-shape="braces" data-scene="atomo" data-side="right">
         <div class="copy" data-reveal>
-          <p class="label"><b>04</b>Tecnologías</p>
+          <p class="label"><b>04</b>{t.stack}</p>
           <ul class="rows stack">
             {
               stack.map((group) => (
@@ -182,12 +233,12 @@ const menu = sections.filter((section) => !['inicio', 'tecnologias'].includes(se
         </div>
       </section>
 
-      <section class="panel" id="contacto" data-shape="at" data-scene="orbita" data-side="left">
+      <section class="panel" id="contacto" data-shape="at" data-scene="planeta" data-side="left">
         <div class="copy" data-reveal>
-          <p class="label"><b>05</b>¿Hacemos algo juntos?</p>
-          <a class="talk" href="mailto:gprezdiez@gmail.com">Hablemos.<span aria-hidden="true">↗</span></a>
+          <p class="label"><b>05</b>{t.contact.label}</p>
+          <a class="talk" href="mailto:grperezdiez@gmail.com">{t.contact.talk}<span aria-hidden="true">↗</span></a>
           <p class="actions">
-            <button type="button" class="button" data-copy="gprezdiez@gmail.com">gprezdiez@gmail.com<span aria-hidden="true">Copiar</span></button>
+            <button type="button" class="button" data-copy="grperezdiez@gmail.com" data-copied={t.contact.copied}>grperezdiez@gmail.com<span aria-hidden="true">{t.contact.copy}</span></button>
             <a class="button ghost" href="https://github.com/gabsplat" target="_blank" rel="noopener noreferrer">GitHub<span aria-hidden="true">↗</span></a>
             <a
               class="button ghost"
@@ -199,50 +250,22 @@ const menu = sections.filter((section) => !['inicio', 'tecnologias'].includes(se
         </div>
         <footer>
           <span>© {new Date().getFullYear()} Gabriel Pérez Diez</span>
-          <span>Hecho en Mendoza con Astro y WebGL</span>
+          <span>{t.contact.made}</span>
         </footer>
       </section>
     </main>
 
-    <div class="orbit" id="orbit" hidden>
-      {
-        labs.map((lab) => (
-          <a
-            class="card"
-            href={lab.href ?? '#labs'}
-            target={lab.href?.startsWith('http') ? '_blank' : undefined}
-            rel={lab.href?.startsWith('http') ? 'noopener noreferrer' : undefined}
-            data-lab={lab.id}
-            data-lab-shape={lab.shape}
-            draggable="false"
-          >
-            <img src={`/labs/${lab.id}.webp`} alt="" width="800" height="520" draggable="false" />
-            <span>{lab.name}</span>
-          </a>
-        ))
-      }
+    <div class="family-story" id="story" hidden>
+      <div class="story-stage" id="story-stage" aria-live="polite"></div>
+      <div class="story-actions">
+        <button type="button" id="story-close">{storyCopy.close} ✕</button>
+      </div>
+      <!-- Al terminar: volver al inicio, grande y al centro -->
+      <div class="story-end" id="story-end" hidden>
+        <button type="button" class="story-home" id="story-home">{storyCopy.home}<span aria-hidden="true">↑</span></button>
+        <button type="button" class="story-again" id="story-replay">{storyCopy.replay} ↻</button>
+      </div>
     </div>
-
-    <aside class="agent" id="agent" data-state="idle" aria-label="Asistente de voz">
-      <div id="agent-cards" class="agent-cards"></div>
-      <p id="agent-say" class="agent-say" aria-live="polite"></p>
-      <p id="agent-heard" class="agent-heard"></p>
-      <div id="agent-panel" class="agent-panel" hidden>
-        <div id="agent-tips" class="agent-tips"></div>
-        <form id="agent-type" class="agent-type">
-          <input type="text" maxlength="200" placeholder="O escribime" aria-label="Mensaje para Mimo" autocomplete="off" />
-        </form>
-      </div>
-      <div class="agent-bar">
-        <button type="button" id="agent-orb" class="agent-orb" aria-pressed="false" aria-label="Hablar con Mimo, el asistente del sitio">
-          <span class="aurora" aria-hidden="true"></span>
-          <span id="agent-blob" class="agent-blob"></span>
-          <svg class="agent-mic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z M6 11a6 6 0 0 0 12 0 M12 17v4" /></svg>
-        </button>
-        <span id="agent-hint" class="agent-hint">Tocá y hablame</span>
-        <button type="button" id="agent-more" class="agent-more" aria-label="Ver ejemplos de lo que podés pedir" aria-expanded="false" hidden>?</button>
-      </div>
-    </aside>
 
     <script>
       import '../scripts/main.ts';
