@@ -123,6 +123,32 @@ header {
   color: var(--accent);
 }
 
+/* El Sol de Mayo del favicon, al lado del nombre; gira muy despacio */
+.brand {
+  display: inline-flex;
+  align-items: center;
+}
+
+.brand .sol {
+  width: 22px;
+  height: 22px;
+  margin-right: 9px;
+  overflow: visible;
+  animation: sol 40s linear infinite;
+}
+
+@keyframes sol {
+  to {
+    rotate: 1turn;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand .sol {
+    animation: none;
+  }
+}
+
 /* El menú es una píldora de vidrio; una marca se desliza hasta la sección activa */
 nav {
   position: relative;
