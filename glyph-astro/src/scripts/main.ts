@@ -270,6 +270,19 @@ document.querySelectorAll<HTMLAnchorElement>('[data-lang]').forEach((link) =>
 // ── La historia de Gabriel: desde la montaña de la portada ──────────────
 const storyRoot = document.querySelector<HTMLElement>('#story')!;
 const replay = document.querySelector<HTMLButtonElement>('#story-replay')!;
+// El sonido de la historia: prendido salvo que la persona lo haya apagado antes
+const soundButton = document.querySelector<HTMLButtonElement>('#story-sound')!;
+try {
+  if (localStorage.getItem('storySound') === 'off') soundButton.setAttribute('aria-pressed', 'false');
+} catch {}
+soundButton.addEventListener('click', () => {
+  const on = soundButton.getAttribute('aria-pressed') !== 'true';
+  soundButton.setAttribute('aria-pressed', String(on));
+  story?.setMuted(!on);
+  try {
+    localStorage.setItem('storySound', on ? 'on' : 'off');
+  } catch {}
+});
 const storyEnd = document.querySelector<HTMLElement>('#story-end')!;
 
 /** El final: el botón para volver aparece con un rebote. */
@@ -301,7 +314,8 @@ function openStory() {
   storyRoot.hidden = false;
   storyEnd.hidden = true;
   backdrop.focus(true);
-  story ??= createStory({ field: backdrop, stage: document.querySelector<HTMLElement>('#story-stage')!, lang, script: 'me', onEnd: showEnd });
+  story ??= createStory({ field: backdrop, stage: document.querySelector<HTMLElement>('#story-stage')!, lang, script: 'me', music: '/audio/historia.mp3', onEnd: showEnd });
+  story.setMuted(soundButton.getAttribute('aria-pressed') !== 'true');
   const current = story;
   loadVideo(backdrop).then(() => current.play());
 }

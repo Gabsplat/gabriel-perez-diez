@@ -260,6 +260,7 @@ const menu = sections.filter((section) => !['inicio', 'tecnologias'].includes(se
     <div class="family-story" id="story" hidden>
       <div class="story-stage" id="story-stage" aria-live="polite"></div>
       <div class="story-actions">
+        <button type="button" id="story-sound" aria-pressed="true">♪ {JOURNEY_COPY[lang].sound}</button>
         <button type="button" id="story-close">{storyCopy.close} ✕</button>
       </div>
       <!-- Al terminar: volver al inicio, grande y al centro -->

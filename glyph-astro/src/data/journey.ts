@@ -47,6 +47,6 @@ export const CHAPTERS: Chapter[] = [
 ];
 
 export const JOURNEY_COPY = {
-  es: { play: 'Mi historia', open: 'Y todo empieza acá…', finale: 'Mandándole prompts al universo.' },
-  en: { play: 'My story', open: 'And it all begins here…', finale: 'Prompting the universe.' },
+  es: { sound: 'Sonido', play: 'Mi historia', open: 'Y todo empieza acá…', finale: 'Mandándole prompts al universo.' },
+  en: { sound: 'Sound', play: 'My story', open: 'And it all begins here…', finale: 'Prompting the universe.' },
 } satisfies Record<Lang, unknown>;

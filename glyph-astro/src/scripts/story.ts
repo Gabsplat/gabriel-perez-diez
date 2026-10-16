@@ -43,6 +43,8 @@ interface Options {
   lang: Lang;
   /** Qué historia: la de la familia, o la de Gabriel (por defecto, la familia). */
   script?: 'family' | 'me';
+  /** Música que acompaña la historia, desde el comienzo (sus compases siguen los de la historia). */
+  music?: string;
   /** Al terminar: aparecen estos botones (volver, ver de nuevo). */
   onEnd?: () => void;
 }
@@ -64,7 +66,7 @@ function letters(target: HTMLElement, text: string) {
   return target.querySelectorAll<HTMLElement>('.char');
 }
 
-export function createStory({ field, stage, lang, script = 'family', onEnd }: Options) {
+export function createStory({ field, stage, lang, script = 'family', music, onEnd }: Options) {
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const copy = STORY_COPY[lang];
   const { lens } = field;
@@ -342,19 +344,20 @@ export function createStory({ field, stage, lang, script = 'family', onEnd }: Op
   /** La historia de Gabriel: de la cordillera, capítulo por capítulo, al espacio. */
   function playMe() {
     const tl = begin();
+    startMusic();
     const journey = JOURNEY_COPY[lang];
+    // Los tiempos siguen los compases de la chacarera (audio/historia.py, compases de 2 s):
+    // 4 s de cordillera, capítulos de 6 s, y el destello del cohete en el segundo 44
     let t = 300;
     tl.call(() => say(journey.open), t);
-    t += 3200;
-    tl.call(unsay, t);
-    t += 500;
+    tl.call(unsay, 3500);
+    t = 4000;
     for (const step of CHAPTERS) {
       // Cada escena se abre como un iris desde el centro
       tl.call(() => field.show(step.scene, 'center', step.accent, { iris: true, duration: 1700 }), t);
       tl.call(() => chapter(step.line[lang], step.sub[lang]), t + 700);
-      t += 5200;
-      tl.call(unchapter, t);
-      t += 500;
+      tl.call(unchapter, t + 5500);
+      t += 6000;
     }
     // La foto vuelve, ya encuadrada en la cara de Gabriel
     tl.call(() => {
@@ -363,7 +366,7 @@ export function createStory({ field, stage, lang, script = 'family', onEnd }: Op
       Object.assign(lens, field.lensFor(me.u, me.v, sx, sy, zoom), { zoom: zoom * 1.6 });
       field.show('foto', 'center', undefined, { iris: true, duration: 1700 });
     }, t);
-    finale(tl, t + 400);
+    finale(tl, t + 600);
     return tl;
   }
 
@@ -438,7 +441,26 @@ export function createStory({ field, stage, lang, script = 'family', onEnd }: Op
     return tl;
   }
 
+  // La música: se crea al primer play, se puede silenciar y se apaga con un fundido al salir
+  let audio: HTMLAudioElement | null = null;
+  let muted = false;
+  function startMusic() {
+    if (!music) return;
+    audio ??= Object.assign(new Audio(music), { preload: 'auto' });
+    audio.pause();
+    audio.currentTime = 0;
+    audio.volume = 0.85;
+    audio.muted = muted;
+    audio.play().catch(() => undefined);
+  }
+  function stopMusic() {
+    if (!audio || audio.paused) return;
+    const playing = audio;
+    animate(playing, { volume: 0, duration: 600, ease: 'outQuad', onComplete: () => playing.pause() });
+  }
+
   function stop() {
+    stopMusic();
     timeline?.revert();
     timeline = null;
     cancelAnimationFrame(following);
@@ -448,5 +470,12 @@ export function createStory({ field, stage, lang, script = 'family', onEnd }: Op
   }
 
   const play = () => (script === 'me' ? playMe() : playFamily());
-  return { play, stop };
+  return {
+    play,
+    stop,
+    setMuted(on: boolean) {
+      muted = on;
+      if (audio) audio.muted = on;
+    },
+  };
 }

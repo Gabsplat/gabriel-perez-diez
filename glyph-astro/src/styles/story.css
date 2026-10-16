@@ -491,3 +491,9 @@ main,
   bottom: calc(10vh + 26px);
   font-size: clamp(48px, 7.2vw, 132px);
 }
+
+/* Sonido apagado: el botón queda tachado y apagado */
+#story-sound[aria-pressed='false'] {
+  color: var(--faint);
+  text-decoration: line-through;
+}
