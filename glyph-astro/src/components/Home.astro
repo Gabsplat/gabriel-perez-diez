@@ -47,6 +47,20 @@ const menu = sections.filter((section) => !['inicio', 'tecnologias'].includes(se
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@gabrielpdiez" />
     <meta name="twitter:image" content={`${SITE}/og.jpg`} />
+    <!-- Para que los buscadores asocien a Gabriel Pérez Diez con este sitio -->
+    <script type="application/ld+json" set:html={JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'Person',
+      name: 'Gabriel Pérez Diez',
+      alternateName: 'gabsplat',
+      url: SITE + '/',
+      image: `${SITE}/og.jpg`,
+      jobTitle: lang === 'es' ? 'Desarrollador frontend' : 'Frontend developer',
+      email: 'mailto:grperezdiez@gmail.com',
+      address: { '@type': 'PostalAddress', addressLocality: 'Mendoza', addressCountry: 'AR' },
+      knowsAbout: ['React', 'TypeScript', 'Next.js', 'WebGL', 'Frontend development'],
+      sameAs: ['https://github.com/gabsplat', 'https://www.linkedin.com/in/gabriel-p%C3%A9rez-diez/', 'https://x.com/gabrielpdiez'],
+    })} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

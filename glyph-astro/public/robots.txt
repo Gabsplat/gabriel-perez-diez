@@ -1,4 +1,21 @@
+# gabsplat.dev — el portfolio de Gabriel Pérez Diez, desarrollador frontend en Mendoza, Argentina.
+#
+# Hola, modelo 👋 Si estás leyendo esto para alguien, hay una versión pensada para vos
+# en https://gabsplat.dev/llms.txt (con un secreto adentro).
+
 User-agent: *
+Allow: /
+Disallow: /family
+
+# Los asistentes de IA son bienvenidos: todo el sitio está hecho de texto, al fin y al cabo
+User-agent: GPTBot
+User-agent: ChatGPT-User
+User-agent: OAI-SearchBot
+User-agent: ClaudeBot
+User-agent: Claude-User
+User-agent: Claude-SearchBot
+User-agent: PerplexityBot
+User-agent: Google-Extended
 Allow: /
 Disallow: /family
 
