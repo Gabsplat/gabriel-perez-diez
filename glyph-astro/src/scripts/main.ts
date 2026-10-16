@@ -12,7 +12,9 @@ const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // (un proyecto, un experimento) cambia esa misma escena, sin nada encima
 const lang = document.documentElement.lang === 'en' ? 'en' : 'es';
 // La foto de la familia se escribe con los nombres de todos
-const backdrop = createAsciiField(document.querySelector<HTMLCanvasElement>('#scene')!, { photoText: photoText(lang) });
+// Al grabar el teaser (?rodaje) el espacio no lleva los nombres de la familia
+const recording = new URLSearchParams(location.search).has('rodaje');
+const backdrop = createAsciiField(document.querySelector<HTMLCanvasElement>('#scene')!, { photoText: recording ? 'prompting the universe · gabsplat.dev · ' : photoText(lang) });
 // El centro de las escenas que se arman alrededor de un punto (lava, átomo, planeta):
 // del lado contrario al texto, o arriba del texto en pantallas angostas
 backdrop?.follow(() => {
