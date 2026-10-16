@@ -47,7 +47,7 @@ const menu = sections.filter((section) => !['inicio', 'tecnologias'].includes(se
         var here = document.documentElement.lang;
         var paths = { es: '/', en: '/en/' };
         var go = function (lang) {
-          if (lang !== here && paths[lang]) location.replace(paths[lang] + location.hash);
+          if (lang !== here && paths[lang]) location.replace(paths[lang] + location.search + location.hash);
           else document.documentElement.classList.remove('lang-pending');
         };
         var saved = null;

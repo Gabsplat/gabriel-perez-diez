@@ -893,12 +893,15 @@ export function createAsciiField(canvas: HTMLCanvasElement, options: { photoText
     dirty = true;
   }
 
+  // Rodaje: con ?rodaje en la dirección, el tiempo lo fija quien graba, cuadro por cuadro
+  let clock: number | null = null;
+
   function frame(now: number) {
     requestAnimationFrame(frame);
     // Quieto: solo se vuelve a dibujar cuando algo cambia
-    if (!visible || (still && !dirty && !mixing)) return;
+    if (!visible || (still && !dirty && !mixing && clock === null)) return;
     dirty = false;
-    const time = still ? 40 : now / 1000;
+    const time = clock ?? (still ? 40 : now / 1000);
 
     pointer.sx += (pointer.x - pointer.sx) * 0.12;
     pointer.sy += (pointer.y - pointer.sy) * 0.12;
@@ -1020,6 +1023,33 @@ export function createAsciiField(canvas: HTMLCanvasElement, options: { photoText
   }
   /** Cámara y halo de la foto: se animan desde afuera. */
   const lens = { x: 0.5, y: 0.5, zoom: 1, hx: 0.5, hy: 0.5, hr: 0.05, glow: 0, space: 0, moon: 0, rocket: 0, flash: 0 };
+
+  // Para grabar el sitio cuadro por cuadro (el teaser): fija escena, variante, cámara y tiempo
+  if (new URLSearchParams(location.search).has('rodaje')) {
+    Object.assign(window, {
+      __rodaje: {
+        scene(name: Scene, variant = 0, accent: [number, number, number] = [116, 172, 223]) {
+          const index = SCENES.indexOf(name);
+          Object.assign(view, { from: index, to: index, blend: 1, iris: 0, vFrom: variant, vTo: variant, vMix: 0, side: 0, hush: 0, gain: 1, r: accent[0], g: accent[1], b: accent[2] });
+          if (name === 'planeta') loadEarth();
+          dirty = true;
+        },
+        lens,
+        time(t: number) {
+          clock = t;
+          dirty = true;
+        },
+        photo(url: string) {
+          const image = new Image();
+          image.src = url;
+          return image.decode().then(() => {
+            photoSource = image;
+            upload();
+          });
+        },
+      },
+    });
+  }
 
   return {
     /** Carga la imagen de la escena `foto`. Un video se vuelve a subir en cada cuadro. */
