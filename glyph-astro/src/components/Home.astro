@@ -30,7 +30,9 @@ const menu = sections.filter((section) => !['inicio', 'tecnologias'].includes(se
     <meta name="description" content={t.description} />
     <title>{t.title}</title>
     {LANGS.map((other) => <link rel="alternate" hreflang={other} href={HOME[other]} />)}
-    <link rel="icon" href="data:," />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preload" href="/fonts/instrument-serif.ttf" as="font" type="font/ttf" crossorigin />
     <script is:inline>
       document.documentElement.classList.add('js');
