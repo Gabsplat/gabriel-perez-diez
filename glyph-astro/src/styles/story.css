@@ -131,12 +131,18 @@ main,
 }
 
 /* Un velo oscuro detrás, para que se lea sobre las letras */
+/* Detrás del texto, un vidrio esmerilado: desenfoca y oscurece las letras del
+   fondo, y sus bordes se disuelven en un óvalo, sin esquinas */
 .story-card::before {
   content: '';
   position: absolute;
-  inset: -40% -30% -40% -20%;
+  inset: -38% -26% -42% -18%;
   z-index: -1;
-  background: radial-gradient(closest-side, #0a0a0bd9, #0a0a0b99 55%, transparent);
+  background: radial-gradient(closest-side, #0a0a0bf0, #0a0a0bcc 45%, #0a0a0b66 75%, transparent);
+  -webkit-backdrop-filter: blur(9px) saturate(0.7);
+  backdrop-filter: blur(9px) saturate(0.7);
+  -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent);
+  mask-image: radial-gradient(closest-side, #000 55%, transparent);
 }
 
 .story-card .entry {
