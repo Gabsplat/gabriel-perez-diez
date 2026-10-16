@@ -1001,6 +1001,11 @@ footer {
 }
 
 @media (max-width: 819px) {
+  /* El menú de abajo va sobre un vidrio más claro: los links en papel para que se lean */
+  nav a {
+    color: var(--paper);
+  }
+
   /* Fondo para que el nombre no se mezcle con las letras que pasan por debajo */
   header {
     padding-bottom: 34px;
